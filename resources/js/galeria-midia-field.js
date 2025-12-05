@@ -1,5 +1,7 @@
 document.addEventListener('alpine:init', () => {
-    Alpine.data('imageGalleryPicker', (config) => ({
+    Alpine.data('imageGalleryPicker', (config) => (
+
+        {
         selecionadas: config.state,
         mediasDisponiveis: config.initialMedias,
         modalAberto: false,

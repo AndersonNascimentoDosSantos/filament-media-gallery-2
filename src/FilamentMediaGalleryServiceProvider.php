@@ -78,4 +78,17 @@ class FilamentMediaGalleryServiceProvider extends PackageServiceProvider
             'create_videos_table',
         ];
     }
+
+    private function getName()
+    {
+        return 'filament-media-gallery';
+    }
+    public function boot(): void
+    {
+       $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'filament-media-gallery');
+
+        $this->publishes([
+            __DIR__ . '/../resources/lang' => $this->app->langPath('vendor/filament-media-gallery'),
+        ], 'filament-media-gallery-translations');
+    }
 }
