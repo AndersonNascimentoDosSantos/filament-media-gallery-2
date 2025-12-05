@@ -79,13 +79,17 @@ class FilamentMediaGalleryServiceProvider extends PackageServiceProvider
         ];
     }
 
-    private function getName()
+    private function getName(): string
     {
-        return 'filament-media-gallery';
+        return $this::$name;
     }
     public function boot(): void
     {
-       $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'filament-media-gallery');
+        parent::boot();
+        // Carrega as views do seu pacote
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', static::getName());
+
+        $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'filament-media-gallery');
 
         $this->publishes([
             __DIR__ . '/../resources/lang' => $this->app->langPath('vendor/filament-media-gallery'),
