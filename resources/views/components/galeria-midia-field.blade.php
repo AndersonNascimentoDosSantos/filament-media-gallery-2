@@ -1,14 +1,9 @@
 @php
-    // Registra os assets necessários para o componente
+    // Carrega os assets do Cropper.js
    \Filament\Support\Facades\FilamentAsset::register([
-        // Libs externas
-        \Filament\Support\Assets\Css::make('cropper-css', 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css'),
-        \Filament\Support\Assets\Js::make('cropper-js', 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js'),
-
-        // Assets do Pacote (assumindo que você irá compilá-los para o diretório 'public/vendor/filament-media-gallery')
-//        \Filament\Support\Assets\Css::make('filament-media-gallery-styles', asset('vendor/filament-media-gallery/css/galeria-midia-field.css')),
-//        \Filament\Support\Assets\Js::make('filament-media-gallery-scripts', asset('vendor/filament-media-gallery/js/galeria-midia-field.js')),
-    ]);
+       \Filament\Support\Assets\Css::make('cropper-css', 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css'),
+       \Filament\Support\Assets\Js::make('cropper-js', 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js'),
+   ]);
 
    $mediaType = $getMediaType(); // 'image' ou 'video'
    $modelClass = $getModelClass();
@@ -19,7 +14,7 @@
     $imageEditorAspectRatios = $getImageEditorAspectRatios();
     $dadosIniciaisGaleria = $getMediasDisponiveis();
 
-    // Passa as traduções para o JavaScript de forma segura
+     // Passa as traduções para o JavaScript de forma segura
     $translations = [
         'limit_reached' => [
             'title' => __('filament-media-gallery::filament-media-gallery.notifications.limit_reached.title'),
@@ -42,6 +37,14 @@
             'body' => __('filament-media-gallery::filament-media-gallery.notifications.save_error.body'),
         ],
     ];
+
+   // IMPORTANTE: Busca apenas as mídias DO TIPO CORRETO que já estão selecionadas
+   $mediasSelecionadasInicialmente = $modelClass::find($getState() ?? [])->map(fn ($media) => [
+       'id' => $media->id,
+       'url' => $media->url,
+       'nome_original' => $media->nome_original,
+       'is_video' => $mediaType === 'video',
+   ]);
 
    $fieldId = 'galeria-midia-' . $getStatePath();
 @endphp
@@ -383,438 +386,350 @@
 
     </div>
 </x-dynamic-component>
-
 <style>
 
     /* Container Principal */
     .g-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 1rem;
     }
 
     /* Seções de Conteúdo */
     .g-section {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    background-color: rgb(249, 250, 251);
-    padding: 1.5rem;
-    border-radius: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        background-color: rgb(249, 250, 251);
+        padding: 1.5rem;
+        border-radius: 0.5rem;
     }
 
     .dark .g-section {
-    background-color: rgb(31, 41, 55);
+        background-color: rgb(31, 41, 55);
     }
 
     .g-label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: rgb(55, 65, 81);
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-bottom: 2px solid rgb(229, 231, 235);
-    padding-bottom: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: rgb(55, 65, 81);
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid rgb(229, 231, 235);
+        padding-bottom: 0.5rem;
     }
 
     .dark .g-label {
-    color: rgb(209, 213, 219);
-    border-bottom-color: rgb(75, 85, 99);
+        color: rgb(209, 213, 219);
+        border-bottom-color: rgb(75, 85, 99);
     }
 
     /* Grid de Imagens - CENTRALIZADO */
     .g-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    justify-content: center;
-    align-items: flex-start;
-    padding: 1rem 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 1rem 0;
     }
 
     /* Thumbnails */
     .g-thumbnail {
-    position: relative;
-    border-radius: 0.5rem;
-    overflow: hidden;
-    width: 150px;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-    transition: all 0.3s;
+        position: relative;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        width: 150px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        transition: all 0.3s;
     }
 
     .g-thumbnail:hover {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
     }
 
     .g-thumbnail img {
-    width: 100%;
-    height: 10rem;
-    object-fit: cover;
-    display: block;
+        width: 100%;
+        height: 10rem;
+        object-fit: cover;
+        display: block;
     }
 
     .g-video-placeholder {
-    width: 100%;
-    height: 10rem;
-    background-color: #e5e7eb;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #9ca3af;
+        width: 100%;
+        height: 10rem;
+        background-color: #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9ca3af;
     }
     .dark .g-video-placeholder {
-    background-color: #374151;
-    color: #6b7280;
+        background-color: #374151;
+        color: #6b7280;
     }
     .g-video-placeholder svg {
-    width: 4rem;
-    height: 4rem;
+        width: 4rem;
+        height: 4rem;
     }
 
     /* Preview de Vídeo com Thumbnail */
     .g-video-preview {
-    position: relative;
-    width: 100%;
-    height: 10rem;
-    overflow: hidden;
+        position: relative;
+        width: 100%;
+        height: 10rem;
+        overflow: hidden;
     }
 
     .g-video-thumbnail {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
     }
 
     .g-video-play-overlay {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 4rem;
-    height: 4rem;
-    background-color: rgba(0, 0, 0, 0.7);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s;
-    pointer-events: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 4rem;
+        height: 4rem;
+        background-color: rgba(0, 0, 0, 0.7);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+        pointer-events: none;
     }
 
     .g-video-play-overlay svg {
-    width: 2rem;
-    height: 2rem;
-    margin-left: 0.25rem;
+        width: 2rem;
+        height: 2rem;
+        margin-left: 0.25rem;
     }
 
     .g-thumbnail:hover .g-video-play-overlay,
     .g-modal-thumb:hover .g-video-play-overlay {
-    background-color: rgba(37, 99, 235, 0.9);
-    transform: translate(-50%, -50%) scale(1.1);
+        background-color: rgba(37, 99, 235, 0.9);
+        transform: translate(-50%, -50%) scale(1.1);
     }
 
     .g-modal-video {
-    /* Se houver estilos específicos para .g-modal-video, eles viriam aqui */
+        /* Se houver estilos específicos para .g-modal-video, eles viriam aqui */
     }
 </style>
 <script>
-
-    function imageGalleryPicker() {
+    function imageGalleryPicker(cfg) {
         return {
-        selecionadas: config.state,
-            mediasDisponiveis: config.initialMedias,
+            selecionadas: cfg.state || [],
+            mediasDisponiveis: cfg.initialMedias || [],
             modalAberto: false,
-            mediaType: config.mediaType,
+            mediaType: cfg.mediaType,
             uploadedFiles: [],
             editorAberto: false,
             cropper: null,
             imagemParaEditarId: null,
             imagemParaEditarUrl: null,
             arquivoParaEditar: null,
-            aspectRatios: config.aspectRatios,
-            currentAspectRatio: config.aspectRatios.length > 0 ? config.aspectRatios[0] : 'free',
+            aspectRatios: cfg.aspectRatios || [],
+            currentAspectRatio: (cfg.aspectRatios && cfg.aspectRatios.length > 0) ? cfg.aspectRatios[0] : 'free',
             uploading: false,
             uploadProgress: '',
             paginaAtual: 1,
-            temMaisPaginas: config.temMaisPaginas,
+            temMaisPaginas: cfg.temMaisPaginas || false,
             carregandoMais: false,
+            statePath: cfg.statePath,
+            allowMultiple: cfg.allowMultiple,
+            maxItems: cfg.maxItems,
 
             init() {
-            console.log('🖼️ Galeria Iniciada - Tipo:', this.mediaType, 'Mídias:', this.mediasDisponiveis.length);
-            console.log('Estado inicial:', JSON.parse(JSON.stringify(this.selecionadas)));
+                console.log('🖼️ Galeria Iniciada:', this.mediaType);
 
-            this.$watch('$wire.get(\'' + config.statePath + '\')', (newState) => {
-                this.selecionadas = newState || [];
-            });
+                this.$watch('selecionadas', value => {
+                    this.$wire.set(this.statePath, value);
+                });
 
-            Livewire.on('galeria:medias-atualizadas', ({ medias }) => {
-                console.log('🔄 Recebendo mídias filtradas:', medias);
-                medias.forEach(mediaDaGaleria => {
-                    if (mediaDaGaleria.is_video === (this.mediaType === 'video')) {
-                        if (!this.mediasDisponiveis.some(local => local.id === mediaDaGaleria.id)) {
-                            this.mediasDisponiveis.push(mediaDaGaleria);
+                Livewire.on('galeria:media-adicionada', ({media}) => {
+                    if (media.is_video === (this.mediaType === 'video')) {
+                        if (!this.mediasDisponiveis.some(m => m.id === media.id)) {
+                            this.mediasDisponiveis.unshift(media);
                         }
                     }
                 });
-            });
+            },
 
-            Livewire.on('galeria:media-adicionada', ({ media }) => {
-                console.log('✨ Nova mídia adicionada:', media);
-                if (media.is_video === (this.mediaType === 'video')) {
-                    if (!this.mediasDisponiveis.some(local => local.id === media.id)) {
-                        this.mediasDisponiveis.push(media);
+            isSelected(mediaId) {
+                return this.selecionadas.map(id => parseInt(id)).includes(parseInt(mediaId));
+            },
+
+            toggleMedia(mediaId) {
+                if (this.allowMultiple) {
+                    const index = this.selecionadas.indexOf(mediaId);
+                    if (index > -1) {
+                        this.selecionadas.splice(index, 1);
+                    } else {
+                        if (this.maxItems && this.selecionadas.length >= this.maxItems) {
+                            return;
+                        }
+                        this.selecionadas.push(mediaId);
                     }
+                } else {
+                    this.selecionadas = this.isSelected(mediaId) ? [] : [mediaId];
                 }
-            });
-        },
+            },
 
-        carregarMais() {
-            if (this.carregandoMais || !this.temMaisPaginas) return;
-
-            this.carregandoMais = true;
-            this.paginaAtual++;
-
-            console.log(`Carregando página ${this.paginaAtual} de ${this.mediaType}...`);
-
-            this.$wire.call('carregarMaisMedias', this.paginaAtual, config.statePath).then(resultado => {
-                const mediasFiltradas = resultado.medias.filter(m =>
-                    m.is_video === (this.mediaType === 'video')
-                );
-
-                this.mediasDisponiveis.push(...mediasFiltradas);
-                this.temMaisPaginas = resultado.temMais;
-                this.carregandoMais = false;
-                console.log(`Página ${this.paginaAtual} carregada. Total: ${this.mediasDisponiveis.length}`);
-            }).catch(error => {
-                console.error('Erro ao carregar mais mídias:', error);
-                this.carregandoMais = false;
-            });
-        },
-
-        toggleMedia(mediaId) {
-            console.log(`Toggling mídia: ${mediaId}`);
-            if (config.allowMultiple) {
+            removerMedia(mediaId) {
                 const index = this.selecionadas.indexOf(mediaId);
                 if (index > -1) {
                     this.selecionadas.splice(index, 1);
-                } else {
-                    if (config.maxItems && this.selecionadas.length >= config.maxItems) {
-                        console.warn('Máximo de itens atingido:', config.maxItems);
-                        new FilamentNotification()
-                            .title(config.translations.limit_reached.title)
-                            .warning()
-                            .body('Máximo de ' + config.maxItems + (this.mediaType === 'image' ? ' imagens' : ' vídeos') + ' permitido')
-                            .send();
-                        return;
-                    }
-                    this.selecionadas.push(mediaId);
                 }
-            } else {
-                this.selecionadas = this.isSelected(mediaId) ? [] : [mediaId];
-            }
-            console.log('Estado após toggle:', JSON.parse(JSON.stringify(this.selecionadas)));
-            this.$wire.set(config.statePath, this.selecionadas);
-        },
+            },
 
-        removerMedia(mediaId) {
-            const index = this.selecionadas.indexOf(mediaId);
-            console.log(`Removendo mídia: ${mediaId}, index: ${index}`);
-            if (index > -1) {
-                this.selecionadas.splice(index, 1);
-            }
-            this.$wire.set(config.statePath, this.selecionadas);
-        },
+            handleMediaUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
 
-        isSelected(mediaId) {
-            const numericId = parseInt(mediaId, 10);
-            return this.selecionadas.map(id => parseInt(id, 10)).includes(numericId);
-        },
-
-        handleMediaUpload(event) {
-            const file = event.target.files[0];
-            console.log('📤 Upload iniciado:', file);
-            if (!file) return;
-
-            if (!config.allowMultiple && this.selecionadas.length > 0) {
-                new FilamentNotification()
-                    .title(config.translations.limit_reached.title)
-                    .warning()
-                    .body(config.translations.limit_reached.single)
-                    .send();
-                event.target.value = '';
-                return;
-            }
-
-            this.uploading = true;
-            this.uploadProgress = `Enviando ${file.name}...`;
-
-            this.$wire.upload(
-                config.statePath + '_new_media',
-                file,
-                (uploadedFilename) => {
-                    console.log('✅ Upload concluído:', uploadedFilename);
-                    this.$wire.call('handleNewMediaUpload', uploadedFilename, config.statePath)
-                        .then(() => {
-                            console.log('✨ Processamento concluído');
-                            this.uploading = false;
-                            this.uploadProgress = '';
-                            event.target.value = '';
-                        })
-                        .catch((error) => {
-                            console.error('❌ Erro:', error);
-                            this.uploading = false;
-                            this.uploadProgress = '';
-                            event.target.value = '';
-                            new FilamentNotification()
-                                .title(config.translations.processing_error.title)
-                                .danger()
-                                .body(config.translations.processing_error.body)
-                                .send();
-                        });
-                },
-                (error) => {
-                    console.error('❌ Erro no upload:', error);
-                    this.uploading = false;
-                    this.uploadProgress = '';
+                if (!this.allowMultiple && this.selecionadas.length > 0) {
+                    alert('Apenas um item permitido');
                     event.target.value = '';
-                    new FilamentNotification()
-                        .title(config.translations.upload_error.title)
-                        .danger()
-                        .body(config.translations.upload_error.body)
-                        .send();
-                },
-                (event) => {
-                    const progress = Math.round(event.detail.progress);
-                    this.uploadProgress = `Enviando: ${progress}%`;
+                    return;
                 }
-            );
-        },
 
-        removeUploadedFile(index) {
-            console.log(`Removendo arquivo do index: ${index}`);
-            this.uploadedFiles.splice(index, 1);
-        },
+                this.uploading = true;
+                this.uploadProgress = `Enviando ${file.name}...`;
 
-        async abrirEditor(imagemId, imagemUrl) {
-            if (this.mediaType !== 'image') {
-                console.warn('Editor disponível apenas para imagens');
-                return;
-            }
+                this.$wire.upload(
+                    this.statePath + '_new_media',
+                    file,
+                    () => {
+                        this.$wire.call('handleNewMediaUpload', file.name, this.statePath)
+                            .then(() => {
+                                this.uploading = false;
+                                this.uploadProgress = '';
+                                event.target.value = '';
+                            })
+                            .catch(() => {
+                                this.uploading = false;
+                                this.uploadProgress = '';
+                                event.target.value = '';
+                            });
+                    },
+                    () => {
+                        this.uploading = false;
+                        this.uploadProgress = '';
+                        event.target.value = '';
+                    },
+                    (evt) => {
+                        this.uploadProgress = `Enviando: ${Math.round(evt.detail.progress)}%`;
+                    }
+                );
+            },
 
-            console.log(`🖌️ Abrindo editor - ID: ${imagemId}`);
-            this.imagemParaEditarId = imagemId;
-            this.imagemParaEditarUrl = imagemUrl;
+            carregarMais() {
+                if (this.carregandoMais || !this.temMaisPaginas) return;
+                this.carregandoMais = true;
+                this.paginaAtual++;
 
-            try {
-                const response = await fetch(imagemUrl);
-                const blob = await response.blob();
-                const file = new File([blob], imagemUrl.split('/').pop(), { type: blob.type });
-                this.arquivoParaEditar = file;
+                this.$wire.call('carregarMaisMedias', this.paginaAtual, this.statePath)
+                    .then(resultado => {
+                        this.mediasDisponiveis.push(...resultado.medias);
+                        this.temMaisPaginas = resultado.temMais;
+                        this.carregandoMais = false;
+                    })
+                    .catch(() => {
+                        this.carregandoMais = false;
+                    });
+            },
 
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.$refs.imageEditorCanvas.src = e.target.result;
-                    this.editorAberto = true;
-                    this.$nextTick(() => this.initCropper());
-                };
-                reader.readAsDataURL(file);
-            } catch (error) {
-                console.error('❌ Erro ao carregar imagem:', error);
-                new FilamentNotification()
-                    .title('Erro ao Carregar')
-                    .danger()
-                    .body('Não foi possível carregar a imagem.')
-                    .send();
-            }
-        },
+            async abrirEditor(imagemId, imagemUrl) {
+                if (this.mediaType !== 'image') return;
 
-        fecharEditor() {
-            console.log('Fechando editor.');
-            this.editorAberto = false;
-            if (this.cropper) {
-                this.cropper.destroy();
-                this.cropper = null;
-            }
-            this.$refs.imageEditorCanvas.src = '';
-            this.imagemParaEditarId = null;
-            this.imagemParaEditarUrl = null;
-            this.arquivoParaEditar = null;
-        },
+                this.imagemParaEditarId = imagemId;
+                this.imagemParaEditarUrl = imagemUrl;
 
-        initCropper() {
-            console.log('Inicializando Cropper.js');
-            if (this.cropper) {
-                this.cropper.destroy();
-            }
-            this.cropper = new Cropper(this.$refs.imageEditorCanvas, {
-                aspectRatio: this.getAspectRatioValue(this.currentAspectRatio),
-                viewMode: 2,
-                dragMode: 'move',
-                autoCropArea: 0.9,
-                responsive: true,
-                restore: false,
-                center: true,
-                highlight: false,
-                cropBoxMovable: true,
-                cropBoxResizable: true,
-                toggleDragModeOnDblclick: false,
-                minContainerWidth: 300,
-                minContainerHeight: 200,
-            });
-        },
+                try {
+                    const response = await fetch(imagemUrl);
+                    const blob = await response.blob();
+                    const file = new File([blob], imagemUrl.split('/').pop(), {type: blob.type});
+                    this.arquivoParaEditar = file;
 
-        getAspectRatioValue(ratioString) {
-            if (!ratioString || ratioString === 'free') return NaN;
-            const parts = ratioString.split(':');
-            return parseFloat(parts[0]) / parseFloat(parts[1]);
-        },
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.$refs.imageEditorCanvas.src = e.target.result;
+                        this.editorAberto = true;
+                        this.$nextTick(() => this.initCropper());
+                    };
+                    reader.readAsDataURL(file);
+                } catch (error) {
+                    console.error('Erro ao carregar imagem:', error);
+                }
+            },
 
-        resetarImagem() { if (this.cropper) this.cropper.reset(); },
-        rotacionar(degree) { if (this.cropper) this.cropper.rotate(degree); },
-        espelharHorizontal() { if (this.cropper) this.cropper.scaleX(-this.cropper.getData().scaleX || -1); },
-        espelharVertical() { if (this.cropper) this.cropper.scaleY(-this.cropper.getData().scaleY || -1); },
-        zoom(factor) { if (this.cropper) this.cropper.zoom(factor); },
-        mudarAspectRatio(ratioString) {
-            this.currentAspectRatio = ratioString;
-            if (this.cropper) this.cropper.setAspectRatio(this.getAspectRatioValue(ratioString));
-        },
+            fecharEditor() {
+                this.editorAberto = false;
+                if (this.cropper) {
+                    this.cropper.destroy();
+                    this.cropper = null;
+                }
+                this.$refs.imageEditorCanvas.src = '';
+                this.imagemParaEditarId = null;
+                this.imagemParaEditarUrl = null;
+                this.arquivoParaEditar = null;
+            },
 
-        salvarImagemEditada() {
-            console.log('💾 Salvando imagem editada...');
-            if (!this.cropper) return;
-
-            this.cropper.getCroppedCanvas().toBlob((blob) => {
-                console.log('🖼️ Canvas convertido para Blob');
-                const fileName = `${this.arquivoParaEditar.name.split('.').slice(0, -1).join('.')}_edited.png`;
-
-                this.$wire.upload(config.statePath + '_edited_media', blob, () => {
-                    console.log('✅ Upload da imagem editada concluído');
-                    this.$wire.call('handleEditedMediaUpload', this.imagemParaEditarId, fileName, config.statePath)
-                        .then(() => {
-                            console.log('✨ Imagem atualizada com sucesso');
-                            this.fecharEditor();
-                            new FilamentNotification()
-                                .title(config.translations.image_edited_success.title)
-                                .success()
-                                .body(config.translations.image_edited_success.body)
-                                .send();
-                            this.$wire.$refresh();
-                        })
-                        .catch((error) => {
-                            console.error('❌ Erro ao salvar:', error);
-                            new FilamentNotification()
-                                .title(config.translations.save_error.title)
-                                .danger()
-                                .body(config.translations.save_error.body)
-                                .send();
-                        });
+            initCropper() {
+                if (this.cropper) this.cropper.destroy();
+                this.cropper = new Cropper(this.$refs.imageEditorCanvas, {
+                    aspectRatio: this.getAspectRatioValue(this.currentAspectRatio),
+                    viewMode: 2,
+                    dragMode: 'move',
+                    autoCropArea: 0.9,
+                    responsive: true,
+                    restore: false,
+                    center: true,
+                    highlight: false,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    toggleDragModeOnDblclick: false
                 });
-            }, 'image/png');
+            },
+
+            getAspectRatioValue(ratioString) {
+                if (!ratioString || ratioString === 'free') return NaN;
+                const parts = ratioString.split(':');
+                return parseFloat(parts[0]) / parseFloat(parts[1]);
+            },
+
+            resetarImagem() { if (this.cropper) this.cropper.reset(); },
+            rotacionar(degree) { if (this.cropper) this.cropper.rotate(degree); },
+            espelharHorizontal() { if (this.cropper) this.cropper.scaleX(-this.cropper.getData().scaleX || -1); },
+            espelharVertical() { if (this.cropper) this.cropper.scaleY(-this.cropper.getData().scaleY || -1); },
+            zoom(factor) { if (this.cropper) this.cropper.zoom(factor); },
+            mudarAspectRatio(ratioString) {
+                this.currentAspectRatio = ratioString;
+                if (this.cropper) this.cropper.setAspectRatio(this.getAspectRatioValue(ratioString));
+            },
+
+            salvarImagemEditada() {
+                if (!this.cropper) return;
+
+                this.cropper.getCroppedCanvas().toBlob((blob) => {
+                    const fileName = `${this.arquivoParaEditar.name.split('.').slice(0, -1).join('.')}_edited.png`;
+
+                    this.$wire.upload(this.statePath + '_edited_media', blob, () => {
+                        this.$wire.call('handleEditedMediaUpload', this.imagemParaEditarId, fileName, this.statePath)
+                            .then(() => {
+                                this.fecharEditor();
+                                this.$wire.$refresh();
+                            });
+                    });
+                }, 'image/png');
+            }
         }
-    }
     }
 </script>
