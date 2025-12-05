@@ -70,7 +70,7 @@
         {{-- Mídias Selecionadas --}}
         <div x-show="selecionadas.length > 0" class="g-section">
             <label class="g-label">
-                <span x-text="mediaType === 'image' ? '📸 {{ __('filament-media-gallery::filament-media-gallery.labels.selected_images') }}' : '🎬 {{ __('filament-media-gallery::filament-media-gallery.labels.selected_videos') }}'"></span>
+                <span x-text="mediaType === 'image' ? '📸 {{ __('media-gallery::filament-media-gallery.labels.selected_images') }}' : '🎬 {{ __('filament-media-gallery::filament-media-gallery.labels.selected_videos') }}'"></span>
             </label>
             <div class="g-grid">
                 {{-- Renderiza as mídias disponíveis e o Alpine controla a visibilidade --}}
