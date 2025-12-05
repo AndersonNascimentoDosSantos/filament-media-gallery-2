@@ -4,12 +4,12 @@
         // Libs externas
         \Filament\Support\Assets\Css::make('cropper-css', 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css'),
         \Filament\Support\Assets\Js::make('cropper-js', 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js'),
-        
+
         // Assets do Pacote (assumindo que você irá compilá-los para o diretório 'public/vendor/filament-media-gallery')
         \Filament\Support\Assets\Css::make('filament-media-gallery-styles', asset('vendor/filament-media-gallery/css/galeria-midia-field.css')),
-        \Filament\Support\Assets\Js::make('filament-media-gallery-scripts', asset('vendor/filament-media-gallery/js/galeria-midia-field.js'))->defer(),
+        \Filament\Support\Assets\Js::make('filament-media-gallery-scripts', asset('vendor/filament-media-gallery/js/galeria-midia-field.js')),
     ]);
-    
+
    $mediaType = $getMediaType(); // 'image' ou 'video'
    $modelClass = $getModelClass();
    $allowMultiple = $getAllowMultiple();
@@ -18,7 +18,7 @@
    $allowImageEditor = $getAllowImageEditor() && $mediaType === 'image'; // Editor só para imagens
     $imageEditorAspectRatios = $getImageEditorAspectRatios();
     $dadosIniciaisGaleria = $getMediasDisponiveis();
- 
+
     // Passa as traduções para o JavaScript de forma segura
     $translations = [
         'limit_reached' => [
@@ -42,7 +42,7 @@
             'body' => __('filament-media-gallery::filament-media-gallery.notifications.save_error.body'),
         ],
     ];
- 
+
    $fieldId = 'galeria-midia-' . $getStatePath();
 @endphp
 
