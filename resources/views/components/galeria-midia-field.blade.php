@@ -1053,7 +1053,7 @@
 </style>
 
 <script>
-    function imageGalleryPicker(cfg) {
+    function imageGalleryPicker(config) {
         return {
             selecionadas: config.state,
             mediasDisponiveis: config.initialMedias,
