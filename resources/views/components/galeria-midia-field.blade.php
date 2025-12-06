@@ -1232,7 +1232,10 @@
                 const file = event.target.files[0];
                 console.log('📤 Upload iniciado:', file?.name);
 
-                if (!file) return;
+                if (!file) {
+                    console.warn('⚠️ Nenhum arquivo selecionado');
+                    return;
+                }
 
                 // Verifica limite de seleção única
                 if (!config.allowMultiple && this.selecionadas.length > 0) {
@@ -1248,14 +1251,20 @@
                 this.uploading = true;
                 this.uploadProgress = `Enviando ${file.name}...`;
 
+                // Nome da propriedade onde o Livewire vai armazenar o arquivo
+                const uploadPropertyName = config.statePath + '_new_media';
+                console.log('📦 Upload property name:', uploadPropertyName);
+
                 this.$wire.upload(
-                    config.statePath + '_new_media',
+                    uploadPropertyName,
                     file,
                     (uploadedFilename) => {
                         console.log('✅ Upload concluído:', uploadedFilename);
+                        console.log('🔧 Chamando handleNewMediaUpload...');
+
                         this.$wire.call('handleNewMediaUpload', uploadedFilename, config.statePath)
                             .then(() => {
-                                console.log('✨ Processamento concluído');
+                                console.log('✨ Processamento concluído com sucesso');
                                 this.uploading = false;
                                 this.uploadProgress = '';
                                 event.target.value = '';
@@ -1286,6 +1295,7 @@
                     (event) => {
                         const progress = Math.round(event.detail.progress);
                         this.uploadProgress = `Enviando: ${progress}%`;
+                        console.log(`📊 Progresso: ${progress}%`);
                     }
                 );
             },

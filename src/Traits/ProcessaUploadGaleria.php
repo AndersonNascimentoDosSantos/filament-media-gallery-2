@@ -151,15 +151,29 @@ trait ProcessaUploadGaleria
             }
 
             $uploadKey = $dataKey . '_new_media';
-            $tempFile = $this->data[$uploadKey] ?? null;
+
+            // Tenta obter o arquivo de múltiplas formas (compatibilidade Livewire)
+            $tempFile = $this->data[$uploadKey] ?? $this->{$uploadKey} ?? null;
 
             \Log::info('ProcessaUploadGaleria: Verificando arquivo temporário', [
                 'uploadKey' => $uploadKey,
                 'tempFile_exists' => $tempFile !== null,
-                'tempFile_class' => $tempFile ? get_class($tempFile) : 'null'
+                'tempFile_class' => $tempFile ? get_class($tempFile) : 'null',
+                'data_keys' => array_keys($this->data ?? []),
+                'uploadedFilename' => $uploadedFilename
             ]);
 
+            // Se não encontrou pelo uploadKey, tenta buscar o arquivo diretamente pelo nome do upload
+            if (!$tempFile && property_exists($this, $uploadKey)) {
+                $tempFile = $this->{$uploadKey};
+            }
+
             if (!$tempFile instanceof TemporaryUploadedFile) {
+                \Log::error('ProcessaUploadGaleria: Arquivo temporário inválido', [
+                    'tempFile_type' => gettype($tempFile),
+                    'tempFile_value' => $tempFile,
+                    'available_properties' => get_object_vars($this)
+                ]);
                 throw new \Exception('Arquivo temporário não encontrado ou inválido.');
             }
 
@@ -273,9 +287,20 @@ trait ProcessaUploadGaleria
             // Remove o prefixo 'data.' se existir
             $dataKey = str_starts_with($statePath, 'data.') ? substr($statePath, 5) : $statePath;
             $uploadKey = $dataKey . '_edited_media';
-            $tempFile = $this->data[$uploadKey] ?? null;
+
+            // Tenta obter o arquivo de múltiplas formas (compatibilidade Livewire)
+            $tempFile = $this->data[$uploadKey] ?? $this->{$uploadKey} ?? null;
+
+            // Se não encontrou pelo uploadKey, tenta buscar o arquivo diretamente
+            if (!$tempFile && property_exists($this, $uploadKey)) {
+                $tempFile = $this->{$uploadKey};
+            }
 
             if (!$tempFile instanceof TemporaryUploadedFile) {
+                \Log::error('ProcessaUploadGaleria: Arquivo editado não encontrado', [
+                    'uploadKey' => $uploadKey,
+                    'tempFile_type' => gettype($tempFile)
+                ]);
                 throw new \Exception('Arquivo editado não encontrado.');
             }
 
