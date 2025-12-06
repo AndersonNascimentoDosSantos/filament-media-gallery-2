@@ -1,11 +1,9 @@
 document.addEventListener('alpine:init', () => {
-    Alpine.data('imageGalleryPicker', (config) => (
-
-        {
+    Alpine.data('imageGalleryPicker', (config) => ({
         selecionadas: config.state,
         mediasDisponiveis: config.initialMedias,
         modalAberto: false,
-        mediaType: config.mediaType,
+        mediaType: config.mediaType, // 'image' ou 'video'
         uploadedFiles: [],
         editorAberto: false,
         cropper: null,
@@ -13,7 +11,7 @@ document.addEventListener('alpine:init', () => {
         imagemParaEditarUrl: null,
         arquivoParaEditar: null,
         aspectRatios: config.aspectRatios,
-        currentAspectRatio: config.aspectRatios.length > 0 ? config.aspectRatios[0] : 'free',
+        currentAspectRatio: config.aspectRatios && config.aspectRatios.length > 0 ? config.aspectRatios[0] : 'free',
         uploading: false,
         uploadProgress: '',
         paginaAtual: 1,
@@ -24,26 +22,74 @@ document.addEventListener('alpine:init', () => {
             console.log('🖼️ Galeria Iniciada - Tipo:', this.mediaType, 'Mídias:', this.mediasDisponiveis.length);
             console.log('Estado inicial:', JSON.parse(JSON.stringify(this.selecionadas)));
 
+            // Mescla as mídias selecionadas com alt text aos dados disponíveis (se existir)
+            if (config.selectedMedias && config.selectedMedias.length > 0) {
+                config.selectedMedias.forEach(selectedMedia => {
+                    const existingIndex = this.mediasDisponiveis.findIndex(m => m.id === selectedMedia.id);
+                    if (existingIndex !== -1) {
+                        // Atualiza a mídia existente com os dados completos (incluindo alt)
+                        this.mediasDisponiveis[existingIndex] = {
+                            ...this.mediasDisponiveis[existingIndex],
+                            ...selectedMedia
+                        };
+                    } else {
+                        // Adiciona a mídia se não existir
+                        this.mediasDisponiveis.push(selectedMedia);
+                    }
+                });
+                console.log('✅ Mídias selecionadas mescladas com alt text');
+            }
+
+            // Watch para mudanças no state do Livewire
             this.$watch('$wire.get(\'' + config.statePath + '\')', (newState) => {
                 this.selecionadas = newState || [];
             });
 
+            // LISTENER 1: Recebe mídias filtradas por tipo (usado em carregarMais)
             Livewire.on('galeria:medias-atualizadas', ({ medias }) => {
                 console.log('🔄 Recebendo mídias filtradas:', medias);
                 medias.forEach(mediaDaGaleria => {
+                    // Só adiciona se for do tipo correto
                     if (mediaDaGaleria.is_video === (this.mediaType === 'video')) {
-                        if (!this.mediasDisponiveis.some(local => local.id === mediaDaGaleria.id)) {
+                        const existingIndex = this.mediasDisponiveis.findIndex(m => m.id === mediaDaGaleria.id);
+                        if (existingIndex === -1) {
                             this.mediasDisponiveis.push(mediaDaGaleria);
                         }
                     }
                 });
             });
 
+            // LISTENER 2: Nova mídia adicionada (upload ou edição)
             Livewire.on('galeria:media-adicionada', ({ media }) => {
                 console.log('✨ Nova mídia adicionada:', media);
+
+                // Verifica se é do tipo correto antes de adicionar
                 if (media.is_video === (this.mediaType === 'video')) {
-                    if (!this.mediasDisponiveis.some(local => local.id === media.id)) {
+                    const existingIndex = this.mediasDisponiveis.findIndex(m => m.id === media.id);
+
+                    if (existingIndex !== -1) {
+                        // Atualiza mídia existente (caso de edição)
+                        this.mediasDisponiveis[existingIndex] = {
+                            ...this.mediasDisponiveis[existingIndex],
+                            ...media
+                        };
+                        console.log('🔄 Mídia atualizada:', media.id);
+                    } else {
+                        // Adiciona nova mídia
                         this.mediasDisponiveis.push(media);
+                        console.log('➕ Nova mídia adicionada à lista:', media.id);
+                    }
+
+                    // Auto-seleciona se não for múltiplo
+                    if (!config.allowMultiple) {
+                        this.selecionadas = [media.id];
+                        this.$wire.set(config.statePath, this.selecionadas);
+                    } else if (config.allowMultiple && !this.isSelected(media.id)) {
+                        // Auto-seleciona se múltiplo e não atingiu o limite
+                        if (!config.maxItems || this.selecionadas.length < config.maxItems) {
+                            this.selecionadas.push(media.id);
+                            this.$wire.set(config.statePath, this.selecionadas);
+                        }
                     }
                 }
             });
@@ -55,9 +101,10 @@ document.addEventListener('alpine:init', () => {
             this.carregandoMais = true;
             this.paginaAtual++;
 
-            console.log(`Carregando página ${this.paginaAtual} de ${this.mediaType}...`);
+            console.log(`📄 Carregando página ${this.paginaAtual} de ${this.mediaType}...`);
 
             this.$wire.call('carregarMaisMedias', this.paginaAtual, config.statePath).then(resultado => {
+                // Filtra apenas o tipo correto (proteção extra)
                 const mediasFiltradas = resultado.medias.filter(m =>
                     m.is_video === (this.mediaType === 'video')
                 );
@@ -65,44 +112,59 @@ document.addEventListener('alpine:init', () => {
                 this.mediasDisponiveis.push(...mediasFiltradas);
                 this.temMaisPaginas = resultado.temMais;
                 this.carregandoMais = false;
-                console.log(`Página ${this.paginaAtual} carregada. Total: ${this.mediasDisponiveis.length}`);
+                console.log(`✅ Página ${this.paginaAtual} carregada. Total: ${this.mediasDisponiveis.length}`);
             }).catch(error => {
-                console.error('Erro ao carregar mais mídias:', error);
+                console.error('❌ Erro ao carregar mais mídias:', error);
                 this.carregandoMais = false;
             });
         },
 
         toggleMedia(mediaId) {
-            console.log(`Toggling mídia: ${mediaId}`);
+            console.log(`🔄 Toggling mídia: ${mediaId}`);
+
+            // Busca a mídia completa com alt text
+            const media = this.mediasDisponiveis.find(m => m.id === mediaId);
+            if (media && media.alt) {
+                console.log('✅ Mídia selecionada tem alt text:', media.alt);
+            }
+
             if (config.allowMultiple) {
                 const index = this.selecionadas.indexOf(mediaId);
                 if (index > -1) {
                     this.selecionadas.splice(index, 1);
+                    console.log('➖ Mídia removida da seleção');
                 } else {
                     if (config.maxItems && this.selecionadas.length >= config.maxItems) {
-                        console.warn('Máximo de itens atingido:', config.maxItems);
+                        console.warn('⚠️ Máximo de itens atingido:', config.maxItems);
                         new FilamentNotification()
                             .title(config.translations.limit_reached.title)
                             .warning()
-                            .body('Máximo de ' + config.maxItems + (this.mediaType === 'image' ? ' imagens' : ' vídeos') + ' permitido')
+                            .body(config.translations.limit_reached.body ||
+                                'Máximo de ' + config.maxItems + (this.mediaType === 'image' ? ' imagens' : ' vídeos') + ' permitido')
                             .send();
                         return;
                     }
                     this.selecionadas.push(mediaId);
+                    console.log('➕ Mídia adicionada à seleção');
                 }
             } else {
                 this.selecionadas = this.isSelected(mediaId) ? [] : [mediaId];
+                console.log('🔄 Seleção única atualizada');
             }
-            console.log('Estado após toggle:', JSON.parse(JSON.stringify(this.selecionadas)));
+
+            console.log('📊 Estado após toggle:', JSON.parse(JSON.stringify(this.selecionadas)));
             this.$wire.set(config.statePath, this.selecionadas);
         },
 
         removerMedia(mediaId) {
             const index = this.selecionadas.indexOf(mediaId);
-            console.log(`Removendo mídia: ${mediaId}, index: ${index}`);
+            console.log(`🗑️ Removendo mídia: ${mediaId}, index: ${index}`);
+
             if (index > -1) {
                 this.selecionadas.splice(index, 1);
+                console.log('✅ Mídia removida da seleção');
             }
+
             this.$wire.set(config.statePath, this.selecionadas);
         },
 
@@ -113,9 +175,11 @@ document.addEventListener('alpine:init', () => {
 
         handleMediaUpload(event) {
             const file = event.target.files[0];
-            console.log('📤 Upload iniciado:', file);
+            console.log('📤 Upload iniciado:', file?.name);
+
             if (!file) return;
 
+            // Verifica limite de seleção única
             if (!config.allowMultiple && this.selecionadas.length > 0) {
                 new FilamentNotification()
                     .title(config.translations.limit_reached.title)
@@ -142,7 +206,7 @@ document.addEventListener('alpine:init', () => {
                             event.target.value = '';
                         })
                         .catch((error) => {
-                            console.error('❌ Erro:', error);
+                            console.error('❌ Erro no processamento:', error);
                             this.uploading = false;
                             this.uploadProgress = '';
                             event.target.value = '';
@@ -172,13 +236,14 @@ document.addEventListener('alpine:init', () => {
         },
 
         removeUploadedFile(index) {
-            console.log(`Removendo arquivo do index: ${index}`);
+            console.log(`🗑️ Removendo arquivo do index: ${index}`);
             this.uploadedFiles.splice(index, 1);
         },
 
         async abrirEditor(imagemId, imagemUrl) {
+            // Editor só funciona para imagens
             if (this.mediaType !== 'image') {
-                console.warn('Editor disponível apenas para imagens');
+                console.warn('⚠️ Editor disponível apenas para imagens');
                 return;
             }
 
@@ -202,7 +267,7 @@ document.addEventListener('alpine:init', () => {
             } catch (error) {
                 console.error('❌ Erro ao carregar imagem:', error);
                 new FilamentNotification()
-                    .title('Erro ao Carregar')
+                    .title(config.translations.save_error.title || 'Erro ao Carregar')
                     .danger()
                     .body('Não foi possível carregar a imagem.')
                     .send();
@@ -210,7 +275,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         fecharEditor() {
-            console.log('Fechando editor.');
+            console.log('🚪 Fechando editor.');
             this.editorAberto = false;
             if (this.cropper) {
                 this.cropper.destroy();
@@ -223,7 +288,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         initCropper() {
-            console.log('Inicializando Cropper.js');
+            console.log('🔧 Inicializando Cropper.js');
             if (this.cropper) {
                 this.cropper.destroy();
             }
@@ -250,11 +315,26 @@ document.addEventListener('alpine:init', () => {
             return parseFloat(parts[0]) / parseFloat(parts[1]);
         },
 
-        resetarImagem() { if (this.cropper) this.cropper.reset(); },
-        rotacionar(degree) { if (this.cropper) this.cropper.rotate(degree); },
-        espelharHorizontal() { if (this.cropper) this.cropper.scaleX(-this.cropper.getData().scaleX || -1); },
-        espelharVertical() { if (this.cropper) this.cropper.scaleY(-this.cropper.getData().scaleY || -1); },
-        zoom(factor) { if (this.cropper) this.cropper.zoom(factor); },
+        resetarImagem() {
+            if (this.cropper) this.cropper.reset();
+        },
+
+        rotacionar(degree) {
+            if (this.cropper) this.cropper.rotate(degree);
+        },
+
+        espelharHorizontal() {
+            if (this.cropper) this.cropper.scaleX(-this.cropper.getData().scaleX || -1);
+        },
+
+        espelharVertical() {
+            if (this.cropper) this.cropper.scaleY(-this.cropper.getData().scaleY || -1);
+        },
+
+        zoom(factor) {
+            if (this.cropper) this.cropper.zoom(factor);
+        },
+
         mudarAspectRatio(ratioString) {
             this.currentAspectRatio = ratioString;
             if (this.cropper) this.cropper.setAspectRatio(this.getAspectRatioValue(ratioString));
@@ -291,6 +371,26 @@ document.addEventListener('alpine:init', () => {
                         });
                 });
             }, 'image/png');
-        }
+        },
+
+        updateAltText(mediaId, altText) {
+            console.log(`✏️ Atualizando alt text - ID: ${mediaId}`, altText);
+
+            // Atualiza o alt text localmente
+            const media = this.mediasDisponiveis.find(m => m.id === mediaId);
+            if (media) {
+                media.alt = altText;
+                console.log('✅ Alt text atualizado localmente');
+            }
+
+            // Persiste no backend via Livewire
+            this.$wire.call('updateMediaAlt', mediaId, altText, config.statePath)
+                .then(() => {
+                    console.log('✅ Alt text persistido no backend');
+                })
+                .catch((error) => {
+                    console.error('❌ Erro ao atualizar alt text:', error);
+                });
+        },
     }));
 });
