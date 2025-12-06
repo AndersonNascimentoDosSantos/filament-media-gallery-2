@@ -1052,213 +1052,213 @@
     }
 </style>
 
-<script>
-    function imageGalleryPicker(cfg) {
-        return {
-            selecionadas: cfg.state || [],
-            mediasDisponiveis: cfg.initialMedias || [],
-            modalAberto: false,
-            mediaType: cfg.mediaType,
-            uploadedFiles: [],
-            editorAberto: false,
-            cropper: null,
-            imagemParaEditarId: null,
-            imagemParaEditarUrl: null,
-            arquivoParaEditar: null,
-            aspectRatios: cfg.aspectRatios || [],
-            currentAspectRatio: (cfg.aspectRatios && cfg.aspectRatios.length > 0) ? cfg.aspectRatios[0] : 'free',
-            uploading: false,
-            uploadProgress: '',
-            paginaAtual: 1,
-            temMaisPaginas: cfg.temMaisPaginas || false,
-            carregandoMais: false,
-            statePath: cfg.statePath,
-            allowMultiple: cfg.allowMultiple,
-            maxItems: cfg.maxItems,
+{{--<script>--}}
+{{--    function imageGalleryPicker(cfg) {--}}
+{{--        return {--}}
+{{--            selecionadas: cfg.state || [],--}}
+{{--            mediasDisponiveis: cfg.initialMedias || [],--}}
+{{--            modalAberto: false,--}}
+{{--            mediaType: cfg.mediaType,--}}
+{{--            uploadedFiles: [],--}}
+{{--            editorAberto: false,--}}
+{{--            cropper: null,--}}
+{{--            imagemParaEditarId: null,--}}
+{{--            imagemParaEditarUrl: null,--}}
+{{--            arquivoParaEditar: null,--}}
+{{--            aspectRatios: cfg.aspectRatios || [],--}}
+{{--            currentAspectRatio: (cfg.aspectRatios && cfg.aspectRatios.length > 0) ? cfg.aspectRatios[0] : 'free',--}}
+{{--            uploading: false,--}}
+{{--            uploadProgress: '',--}}
+{{--            paginaAtual: 1,--}}
+{{--            temMaisPaginas: cfg.temMaisPaginas || false,--}}
+{{--            carregandoMais: false,--}}
+{{--            statePath: cfg.statePath,--}}
+{{--            allowMultiple: cfg.allowMultiple,--}}
+{{--            maxItems: cfg.maxItems,--}}
 
-            init() {
-                console.log('🖼️ Galeria Iniciada:', this.mediaType);
+{{--            init() {--}}
+{{--                console.log('🖼️ Galeria Iniciada:', this.mediaType);--}}
 
-                this.$watch('selecionadas', value => {
-                    this.$wire.set(this.statePath, value);
-                });
+{{--                this.$watch('selecionadas', value => {--}}
+{{--                    this.$wire.set(this.statePath, value);--}}
+{{--                });--}}
 
-                Livewire.on('galeria:media-adicionada', ({media}) => {
-                    if (media.is_video === (this.mediaType === 'video')) {
-                        if (!this.mediasDisponiveis.some(m => m.id === media.id)) {
-                            this.mediasDisponiveis.unshift(media);
-                        }
-                    }
-                });
-            },
+{{--                Livewire.on('galeria:media-adicionada', ({media}) => {--}}
+{{--                    if (media.is_video === (this.mediaType === 'video')) {--}}
+{{--                        if (!this.mediasDisponiveis.some(m => m.id === media.id)) {--}}
+{{--                            this.mediasDisponiveis.unshift(media);--}}
+{{--                        }--}}
+{{--                    }--}}
+{{--                });--}}
+{{--            },--}}
 
-            isSelected(mediaId) {
-                return this.selecionadas.map(id => parseInt(id)).includes(parseInt(mediaId));
-            },
+{{--            isSelected(mediaId) {--}}
+{{--                return this.selecionadas.map(id => parseInt(id)).includes(parseInt(mediaId));--}}
+{{--            },--}}
 
-            toggleMedia(mediaId) {
-                if (this.allowMultiple) {
-                    const index = this.selecionadas.indexOf(mediaId);
-                    if (index > -1) {
-                        this.selecionadas.splice(index, 1);
-                    } else {
-                        if (this.maxItems && this.selecionadas.length >= this.maxItems) {
-                            return;
-                        }
-                        this.selecionadas.push(mediaId);
-                    }
-                } else {
-                    this.selecionadas = this.isSelected(mediaId) ? [] : [mediaId];
-                }
-            },
+{{--            toggleMedia(mediaId) {--}}
+{{--                if (this.allowMultiple) {--}}
+{{--                    const index = this.selecionadas.indexOf(mediaId);--}}
+{{--                    if (index > -1) {--}}
+{{--                        this.selecionadas.splice(index, 1);--}}
+{{--                    } else {--}}
+{{--                        if (this.maxItems && this.selecionadas.length >= this.maxItems) {--}}
+{{--                            return;--}}
+{{--                        }--}}
+{{--                        this.selecionadas.push(mediaId);--}}
+{{--                    }--}}
+{{--                } else {--}}
+{{--                    this.selecionadas = this.isSelected(mediaId) ? [] : [mediaId];--}}
+{{--                }--}}
+{{--            },--}}
 
-            removerMedia(mediaId) {
-                const index = this.selecionadas.indexOf(mediaId);
-                if (index > -1) {
-                    this.selecionadas.splice(index, 1);
-                }
-            },
+{{--            removerMedia(mediaId) {--}}
+{{--                const index = this.selecionadas.indexOf(mediaId);--}}
+{{--                if (index > -1) {--}}
+{{--                    this.selecionadas.splice(index, 1);--}}
+{{--                }--}}
+{{--            },--}}
 
-            handleMediaUpload(event) {
-                const file = event.target.files[0];
-                if (!file) return;
+{{--            handleMediaUpload(event) {--}}
+{{--                const file = event.target.files[0];--}}
+{{--                if (!file) return;--}}
 
-                if (!this.allowMultiple && this.selecionadas.length > 0) {
-                    alert('Apenas um item permitido');
-                    event.target.value = '';
-                    return;
-                }
+{{--                if (!this.allowMultiple && this.selecionadas.length > 0) {--}}
+{{--                    alert('Apenas um item permitido');--}}
+{{--                    event.target.value = '';--}}
+{{--                    return;--}}
+{{--                }--}}
 
-                this.uploading = true;
-                this.uploadProgress = `Enviando ${file.name}...`;
+{{--                this.uploading = true;--}}
+{{--                this.uploadProgress = `Enviando ${file.name}...`;--}}
 
-                this.$wire.upload(
-                    this.statePath + '_new_media',
-                    file,
-                    () => {
-                        this.$wire.call('handleNewMediaUpload', file.name, this.statePath)
-                            .then(() => {
-                                this.uploading = false;
-                                this.uploadProgress = '';
-                                event.target.value = '';
-                            })
-                            .catch(() => {
-                                this.uploading = false;
-                                this.uploadProgress = '';
-                                event.target.value = '';
-                            });
-                    },
-                    () => {
-                        this.uploading = false;
-                        this.uploadProgress = '';
-                        event.target.value = '';
-                    },
-                    (evt) => {
-                        this.uploadProgress = `Enviando: ${Math.round(evt.detail.progress)}%`;
-                    }
-                );
-            },
+{{--                this.$wire.upload(--}}
+{{--                    this.statePath + '_new_media',--}}
+{{--                    file,--}}
+{{--                    () => {--}}
+{{--                        this.$wire.call('handleNewMediaUpload', file.name, this.statePath)--}}
+{{--                            .then(() => {--}}
+{{--                                this.uploading = false;--}}
+{{--                                this.uploadProgress = '';--}}
+{{--                                event.target.value = '';--}}
+{{--                            })--}}
+{{--                            .catch(() => {--}}
+{{--                                this.uploading = false;--}}
+{{--                                this.uploadProgress = '';--}}
+{{--                                event.target.value = '';--}}
+{{--                            });--}}
+{{--                    },--}}
+{{--                    () => {--}}
+{{--                        this.uploading = false;--}}
+{{--                        this.uploadProgress = '';--}}
+{{--                        event.target.value = '';--}}
+{{--                    },--}}
+{{--                    (evt) => {--}}
+{{--                        this.uploadProgress = `Enviando: ${Math.round(evt.detail.progress)}%`;--}}
+{{--                    }--}}
+{{--                );--}}
+{{--            },--}}
 
-            carregarMais() {
-                if (this.carregandoMais || !this.temMaisPaginas) return;
-                this.carregandoMais = true;
-                this.paginaAtual++;
+{{--            carregarMais() {--}}
+{{--                if (this.carregandoMais || !this.temMaisPaginas) return;--}}
+{{--                this.carregandoMais = true;--}}
+{{--                this.paginaAtual++;--}}
 
-                this.$wire.call('carregarMaisMedias', this.paginaAtual, this.statePath)
-                    .then(resultado => {
-                        this.mediasDisponiveis.push(...resultado.medias);
-                        this.temMaisPaginas = resultado.temMais;
-                        this.carregandoMais = false;
-                    })
-                    .catch(() => {
-                        this.carregandoMais = false;
-                    });
-            },
+{{--                this.$wire.call('carregarMaisMedias', this.paginaAtual, this.statePath)--}}
+{{--                    .then(resultado => {--}}
+{{--                        this.mediasDisponiveis.push(...resultado.medias);--}}
+{{--                        this.temMaisPaginas = resultado.temMais;--}}
+{{--                        this.carregandoMais = false;--}}
+{{--                    })--}}
+{{--                    .catch(() => {--}}
+{{--                        this.carregandoMais = false;--}}
+{{--                    });--}}
+{{--            },--}}
 
-            async abrirEditor(imagemId, imagemUrl) {
-                if (this.mediaType !== 'image') return;
+{{--            async abrirEditor(imagemId, imagemUrl) {--}}
+{{--                if (this.mediaType !== 'image') return;--}}
 
-                this.imagemParaEditarId = imagemId;
-                this.imagemParaEditarUrl = imagemUrl;
+{{--                this.imagemParaEditarId = imagemId;--}}
+{{--                this.imagemParaEditarUrl = imagemUrl;--}}
 
-                try {
-                    const response = await fetch(imagemUrl);
-                    const blob = await response.blob();
-                    const file = new File([blob], imagemUrl.split('/').pop(), {type: blob.type});
-                    this.arquivoParaEditar = file;
+{{--                try {--}}
+{{--                    const response = await fetch(imagemUrl);--}}
+{{--                    const blob = await response.blob();--}}
+{{--                    const file = new File([blob], imagemUrl.split('/').pop(), {type: blob.type});--}}
+{{--                    this.arquivoParaEditar = file;--}}
 
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        this.$refs.imageEditorCanvas.src = e.target.result;
-                        this.editorAberto = true;
-                        this.$nextTick(() => this.initCropper());
-                    };
-                    reader.readAsDataURL(file);
-                } catch (error) {
-                    console.error('Erro ao carregar imagem:', error);
-                }
-            },
+{{--                    const reader = new FileReader();--}}
+{{--                    reader.onload = (e) => {--}}
+{{--                        this.$refs.imageEditorCanvas.src = e.target.result;--}}
+{{--                        this.editorAberto = true;--}}
+{{--                        this.$nextTick(() => this.initCropper());--}}
+{{--                    };--}}
+{{--                    reader.readAsDataURL(file);--}}
+{{--                } catch (error) {--}}
+{{--                    console.error('Erro ao carregar imagem:', error);--}}
+{{--                }--}}
+{{--            },--}}
 
-            fecharEditor() {
-                this.editorAberto = false;
-                if (this.cropper) {
-                    this.cropper.destroy();
-                    this.cropper = null;
-                }
-                this.$refs.imageEditorCanvas.src = '';
-                this.imagemParaEditarId = null;
-                this.imagemParaEditarUrl = null;
-                this.arquivoParaEditar = null;
-            },
+{{--            fecharEditor() {--}}
+{{--                this.editorAberto = false;--}}
+{{--                if (this.cropper) {--}}
+{{--                    this.cropper.destroy();--}}
+{{--                    this.cropper = null;--}}
+{{--                }--}}
+{{--                this.$refs.imageEditorCanvas.src = '';--}}
+{{--                this.imagemParaEditarId = null;--}}
+{{--                this.imagemParaEditarUrl = null;--}}
+{{--                this.arquivoParaEditar = null;--}}
+{{--            },--}}
 
-            initCropper() {
-                if (this.cropper) this.cropper.destroy();
-                this.cropper = new Cropper(this.$refs.imageEditorCanvas, {
-                    aspectRatio: this.getAspectRatioValue(this.currentAspectRatio),
-                    viewMode: 2,
-                    dragMode: 'move',
-                    autoCropArea: 0.9,
-                    responsive: true,
-                    restore: false,
-                    center: true,
-                    highlight: false,
-                    cropBoxMovable: true,
-                    cropBoxResizable: true,
-                    toggleDragModeOnDblclick: false
-                });
-            },
+{{--            initCropper() {--}}
+{{--                if (this.cropper) this.cropper.destroy();--}}
+{{--                this.cropper = new Cropper(this.$refs.imageEditorCanvas, {--}}
+{{--                    aspectRatio: this.getAspectRatioValue(this.currentAspectRatio),--}}
+{{--                    viewMode: 2,--}}
+{{--                    dragMode: 'move',--}}
+{{--                    autoCropArea: 0.9,--}}
+{{--                    responsive: true,--}}
+{{--                    restore: false,--}}
+{{--                    center: true,--}}
+{{--                    highlight: false,--}}
+{{--                    cropBoxMovable: true,--}}
+{{--                    cropBoxResizable: true,--}}
+{{--                    toggleDragModeOnDblclick: false--}}
+{{--                });--}}
+{{--            },--}}
 
-            getAspectRatioValue(ratioString) {
-                if (!ratioString || ratioString === 'free') return NaN;
-                const parts = ratioString.split(':');
-                return parseFloat(parts[0]) / parseFloat(parts[1]);
-            },
+{{--            getAspectRatioValue(ratioString) {--}}
+{{--                if (!ratioString || ratioString === 'free') return NaN;--}}
+{{--                const parts = ratioString.split(':');--}}
+{{--                return parseFloat(parts[0]) / parseFloat(parts[1]);--}}
+{{--            },--}}
 
-            resetarImagem() { if (this.cropper) this.cropper.reset(); },
-            rotacionar(degree) { if (this.cropper) this.cropper.rotate(degree); },
-            espelharHorizontal() { if (this.cropper) this.cropper.scaleX(-this.cropper.getData().scaleX || -1); },
-            espelharVertical() { if (this.cropper) this.cropper.scaleY(-this.cropper.getData().scaleY || -1); },
-            zoom(factor) { if (this.cropper) this.cropper.zoom(factor); },
-            mudarAspectRatio(ratioString) {
-                this.currentAspectRatio = ratioString;
-                if (this.cropper) this.cropper.setAspectRatio(this.getAspectRatioValue(ratioString));
-            },
+{{--            resetarImagem() { if (this.cropper) this.cropper.reset(); },--}}
+{{--            rotacionar(degree) { if (this.cropper) this.cropper.rotate(degree); },--}}
+{{--            espelharHorizontal() { if (this.cropper) this.cropper.scaleX(-this.cropper.getData().scaleX || -1); },--}}
+{{--            espelharVertical() { if (this.cropper) this.cropper.scaleY(-this.cropper.getData().scaleY || -1); },--}}
+{{--            zoom(factor) { if (this.cropper) this.cropper.zoom(factor); },--}}
+{{--            mudarAspectRatio(ratioString) {--}}
+{{--                this.currentAspectRatio = ratioString;--}}
+{{--                if (this.cropper) this.cropper.setAspectRatio(this.getAspectRatioValue(ratioString));--}}
+{{--            },--}}
 
-            salvarImagemEditada() {
-                if (!this.cropper) return;
+{{--            salvarImagemEditada() {--}}
+{{--                if (!this.cropper) return;--}}
 
-                this.cropper.getCroppedCanvas().toBlob((blob) => {
-                    const fileName = `${this.arquivoParaEditar.name.split('.').slice(0, -1).join('.')}_edited.png`;
+{{--                this.cropper.getCroppedCanvas().toBlob((blob) => {--}}
+{{--                    const fileName = `${this.arquivoParaEditar.name.split('.').slice(0, -1).join('.')}_edited.png`;--}}
 
-                    this.$wire.upload(this.statePath + '_edited_media', blob, () => {
-                        this.$wire.call('handleEditedMediaUpload', this.imagemParaEditarId, fileName, this.statePath)
-                            .then(() => {
-                                this.fecharEditor();
-                                this.$wire.$refresh();
-                            });
-                    });
-                }, 'image/png');
-            }
-        }
-    }
-</script>
+{{--                    this.$wire.upload(this.statePath + '_edited_media', blob, () => {--}}
+{{--                        this.$wire.call('handleEditedMediaUpload', this.imagemParaEditarId, fileName, this.statePath)--}}
+{{--                            .then(() => {--}}
+{{--                                this.fecharEditor();--}}
+{{--                                this.$wire.$refresh();--}}
+{{--                            });--}}
+{{--                    });--}}
+{{--                }, 'image/png');--}}
+{{--            }--}}
+{{--        }--}}
+{{--    }--}}
+{{--</script>--}}
