@@ -175,12 +175,19 @@ trait ProcessaUploadGaleria
                 'disk' => $disk
             ]);
 
-            $media = $modelClass::create([
+            $dataToCreate = [
                 'path' => $newPath,
                 'nome_original' => $tempFile->getClientOriginalName(),
                 'mime_type' => $tempFile->getMimeType(),
                 'tamanho' => $tempFile->getSize(),
-            ]);
+            ];
+
+            // Adiciona campo 'alt' apenas para imagens
+            if ($mediaType === 'image') {
+                $dataToCreate['alt'] = $tempFile->getClientOriginalName();
+            }
+
+            $media = $modelClass::create($dataToCreate);
 
             // Gera thumbnail para vídeos se habilitado
             if ($mediaType === 'video' && config('filament-media-gallery.video.thumbnail.enabled', true)) {
@@ -210,15 +217,26 @@ trait ProcessaUploadGaleria
                 ->body(__('filament-media-gallery::filament-media-gallery.notifications.upload_complete.body'))
                 ->send();
 
-            $this->dispatch('galeria:media-adicionada', media: [
+            // Prepara dados para dispatch
+            $mediaData = [
                 'id' => $media->id,
                 'url' => $media->url,
                 'nome_original' => $media->nome_original,
                 'is_video' => $mediaType === 'video',
-                'thumbnail_url' => ($mediaType === 'video' && method_exists($media, 'getThumbnailUrlAttribute'))
-                    ? $media->thumbnail_url
-                    : null,
-            ]);
+            ];
+
+            // Adiciona thumbnail para vídeos
+            if ($mediaType === 'video' && method_exists($media, 'getThumbnailUrlAttribute')) {
+                $mediaData['thumbnail_url'] = $media->thumbnail_url;
+            }
+
+            // Adiciona alt para imagens
+            if ($mediaType === 'image' && isset($media->alt)) {
+                $mediaData['alt'] = $media->alt;
+            }
+
+            // DISPATCH DO EVENTO PARA ATUALIZAR UI
+            $this->dispatch('galeria:media-adicionada', media: $mediaData);
 
             \Log::info('ProcessaUploadGaleria: Upload concluído com sucesso', [
                 'media_id' => $media->id
@@ -315,7 +333,7 @@ trait ProcessaUploadGaleria
 
     /**
      * Carrega mais mídias para a galeria com paginação.
-     * AGORA FILTRA POR TIPO DE MÍDIA!
+     * FILTRA POR TIPO DE MÍDIA!
      */
     public function carregarMaisMedias(int $pagina = 1, string $statePath): array
     {
@@ -359,6 +377,11 @@ trait ProcessaUploadGaleria
                     $data['thumbnail_url'] = $media->thumbnail_url;
                 }
 
+                // Adiciona alt text para imagens
+                if ($mediaType === 'image' && isset($media->alt)) {
+                    $data['alt'] = $media->alt;
+                }
+
                 return $data;
             })->toArray();
 
@@ -379,5 +402,96 @@ trait ProcessaUploadGaleria
             ]);
             return ['medias' => [], 'temMais' => false];
         }
+    }
+
+    /**
+     * Atualiza o texto alternativo (alt) de uma imagem.
+     */
+    public function updateMediaAlt(int $mediaId, ?string $altText, string $statePath): void
+    {
+        try {
+            \Log::info('ProcessaUploadGaleria: Atualizando alt text', [
+                'mediaId' => $mediaId,
+                'altText' => $altText,
+                'statePath' => $statePath
+            ]);
+
+            $config = $this->getFieldConfig($statePath);
+
+            if (!$config) {
+                throw new \Exception("Não foi possível obter configuração do campo '$statePath'.");
+            }
+
+            $modelClass = $config['modelClass'];
+            $mediaType = $config['mediaType'];
+
+            // Alt text só faz sentido para imagens
+            if ($mediaType !== 'image') {
+                \Log::warning('ProcessaUploadGaleria: Tentativa de atualizar alt em vídeo', [
+                    'mediaId' => $mediaId
+                ]);
+                return;
+            }
+
+            $imagem = $modelClass::find($mediaId);
+
+            if (!$imagem) {
+                throw new \Exception('Imagem não encontrada.');
+            }
+
+            $imagem->update([
+                'alt' => $altText
+            ]);
+
+            \Log::info('ProcessaUploadGaleria: Alt text atualizado com sucesso', [
+                'imagem_id' => $imagem->id,
+                'alt' => $altText
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('ProcessaUploadGaleria: Erro em updateMediaAlt', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+
+    /**
+     * Obtém mídias disponíveis (usado na inicialização do componente)
+     */
+    protected function getMediasDisponiveis(): array
+    {
+        $modelClass = $this->getModelClass();
+        $mediaType = $this->getMediaType();
+        $perPage = config('filament-media-gallery.gallery.per_page', 24);
+
+        $medias = $modelClass::orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        $mappedMedias = collect($medias->items())->map(function ($media) use ($mediaType) {
+            $data = [
+                'id' => $media->id,
+                'url' => $media->url,
+                'nome_original' => $media->nome_original,
+                'is_video' => $mediaType === 'video',
+            ];
+
+            // Adiciona thumbnail para vídeos
+            if ($mediaType === 'video' && method_exists($media, 'getThumbnailUrlAttribute')) {
+                $data['thumbnail_url'] = $media->thumbnail_url;
+            }
+
+            // Adiciona alt para imagens
+            if ($mediaType === 'image' && isset($media->alt)) {
+                $data['alt'] = $media->alt;
+            }
+
+            return $data;
+        })->toArray();
+
+        return [
+            'medias' => $mappedMedias,
+            'temMais' => $medias->hasMorePages(),
+        ];
     }
 }
