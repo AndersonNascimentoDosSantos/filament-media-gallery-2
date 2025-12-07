@@ -8,32 +8,32 @@ use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
-trait ProcessaUploadGaleria
+trait ProcessUploadGallery
 {
     /**
-     * Cache de configurações dos campos para evitar buscas repetidas
+     * Field configuration cache to avoid repeated lookups
      */
     protected array $fieldConfigCache = [];
 
     /**
-     * Obtém as configurações de um campo de mídia.
+     * Gets the configuration of a media field.
      */
     protected function getFieldConfig(string $statePath): ?array
     {
-        // Remove o prefixo 'data.' se existir
+        // Remove 'data.' prefix if exists
         $key = str_starts_with($statePath, 'data.') ? substr($statePath, 5) : $statePath;
 
-        // Verifica se já está em cache
+        // Check if already in cache
         if (isset($this->fieldConfigCache[$key])) {
             return $this->fieldConfigCache[$key];
         }
 
-        \Log::info('ProcessaUploadGaleria: Buscando configuração do campo', [
+        \Log::info('ProcessaUploadGaleria: Fetching field configuration', [
             'statePath' => $statePath,
             'key' => $key
         ]);
 
-        // Tenta acessar o form se existir
+        // Try to access form if exists
         if (property_exists($this, 'form') && method_exists($this, 'form')) {
             try {
                 $form = $this->form($this->makeForm());
@@ -52,18 +52,18 @@ trait ProcessaUploadGaleria
                         ];
 
                         $this->fieldConfigCache[$key] = $config;
-                        \Log::info('ProcessaUploadGaleria: Configuração obtida do componente', $config);
+                        \Log::info('ProcessaUploadGaleria: Configuration obtained from component', $config);
                         return $config;
                     }
                 }
             } catch (\Exception $e) {
-                \Log::warning('ProcessaUploadGaleria: Erro ao acessar form', [
+                \Log::warning('ProcessaUploadGaleria: Error accessing form', [
                     'error' => $e->getMessage()
                 ]);
             }
         }
 
-        // Fallback: inferir pelo nome do campo
+        // Fallback: infer from field name
         $config = $this->inferFieldConfig($key);
 
         if ($config) {
@@ -75,18 +75,18 @@ trait ProcessaUploadGaleria
     }
 
     /**
-     * Infere a configuração do campo baseado no nome
+     * Infers field configuration based on name
      */
     protected function inferFieldConfig(string $fieldName): ?array
     {
-        \Log::info('ProcessaUploadGaleria: Inferindo configuração', [
+        \Log::info('ProcessaUploadGaleria: Inferring configuration', [
             'fieldName' => $fieldName
         ]);
 
-        // Detecta se é campo de vídeo ou imagem pelo nome
+        // Detect if it's a video or image field by name
         $isVideoField = str_contains(strtolower($fieldName), 'video');
 
-        // Usa models do config
+        // Use models from config
         $imageModel = config('filament-media-gallery.image.model', Imagem::class);
         $videoModel = config('filament-media-gallery.video.model', Video::class);
 
@@ -98,18 +98,18 @@ trait ProcessaUploadGaleria
             'maxItems' => config('filament-media-gallery.gallery.max_items', null),
         ];
 
-        \Log::info('ProcessaUploadGaleria: Configuração inferida', $config);
+        \Log::info('ProcessaUploadGaleria: Inferred configuration', $config);
 
         return $config;
     }
 
     /**
-     * Processa o upload de uma nova mídia (imagem ou vídeo).
+     * Processes the upload of new media (image or video).
      */
     public function handleNewMediaUpload(string $uploadedFilename, string $statePath): void
     {
         try {
-            \Log::info('ProcessaUploadGaleria: Iniciando handleNewMediaUpload', [
+            \Log::info('ProcessaUploadGaleria: Starting handleNewMediaUpload', [
                 'uploadedFilename' => $uploadedFilename,
                 'statePath' => $statePath
             ]);
@@ -117,20 +117,20 @@ trait ProcessaUploadGaleria
             $config = $this->getFieldConfig($statePath);
 
             if (!$config) {
-                throw new \Exception("Não foi possível obter configuração do campo '$statePath'.");
+                throw new \Exception("Unable to get configuration for field '$statePath'.");
             }
 
             $allowMultiple = $config['allowMultiple'];
             $mediaType = $config['mediaType'];
             $modelClass = $config['modelClass'];
 
-            \Log::info('ProcessaUploadGaleria: Configurações do campo', [
+            \Log::info('ProcessaUploadGaleria: Field configurations', [
                 'mediaType' => $mediaType,
                 'modelClass' => $modelClass,
                 'allowMultiple' => $allowMultiple
             ]);
 
-            // Remove o prefixo 'data.' para acessar o array $this->data
+            // Remove 'data.' prefix to access $this->data array
             $dataKey = str_starts_with($statePath, 'data.') ? substr($statePath, 5) : $statePath;
 
             if (!$allowMultiple) {
@@ -152,10 +152,10 @@ trait ProcessaUploadGaleria
 
             $uploadKey = $dataKey . '_new_media';
 
-            // Tenta obter o arquivo de múltiplas formas (compatibilidade Livewire)
+            // Try to get file in multiple ways (Livewire compatibility)
             $tempFile = $this->data[$uploadKey] ?? $this->{$uploadKey} ?? null;
 
-            \Log::info('ProcessaUploadGaleria: Verificando arquivo temporário', [
+            \Log::info('ProcessaUploadGaleria: Checking temporary file', [
                 'uploadKey' => $uploadKey,
                 'tempFile_exists' => $tempFile !== null,
                 'tempFile_class' => $tempFile ? get_class($tempFile) : 'null',
@@ -163,27 +163,27 @@ trait ProcessaUploadGaleria
                 'uploadedFilename' => $uploadedFilename
             ]);
 
-            // Se não encontrou pelo uploadKey, tenta buscar o arquivo diretamente pelo nome do upload
+            // If not found by uploadKey, try to fetch file directly by upload name
             if (!$tempFile && property_exists($this, $uploadKey)) {
                 $tempFile = $this->{$uploadKey};
             }
 
             if (!$tempFile instanceof TemporaryUploadedFile) {
-                \Log::error('ProcessaUploadGaleria: Arquivo temporário inválido', [
+                \Log::error('ProcessaUploadGaleria: Invalid temporary file', [
                     'tempFile_type' => gettype($tempFile),
                     'tempFile_value' => $tempFile,
                     'available_properties' => get_object_vars($this)
                 ]);
-                throw new \Exception('Arquivo temporário não encontrado ou inválido.');
+                throw new \Exception('Temporary file not found or invalid.');
             }
 
-            // Usa configurações do plugin
+            // Use plugin configurations
             $disk = config('filament-media-gallery.disk', 'public');
             $path = config('filament-media-gallery.path', 'galeria');
 
             $newPath = $tempFile->store($path, $disk);
 
-            \Log::info('ProcessaUploadGaleria: Arquivo armazenado', [
+            \Log::info('ProcessaUploadGaleria: File stored', [
                 'newPath' => $newPath,
                 'original_name' => $tempFile->getClientOriginalName(),
                 'disk' => $disk
@@ -196,14 +196,14 @@ trait ProcessaUploadGaleria
                 'tamanho' => $tempFile->getSize(),
             ];
 
-            // Adiciona campo 'alt' apenas para imagens
+            // Add 'alt' field only for images
             if ($mediaType === 'image') {
                 $dataToCreate['alt'] = $tempFile->getClientOriginalName();
             }
 
             $media = $modelClass::create($dataToCreate);
 
-            // Gera thumbnail para vídeos se habilitado
+            // Generate thumbnail for videos if enabled
             if ($mediaType === 'video' && config('filament-media-gallery.video.thumbnail.enabled', true)) {
                 $thumbnail = $this->gerarThumbnailVideo($newPath);
                 if ($thumbnail) {
@@ -211,7 +211,7 @@ trait ProcessaUploadGaleria
                 }
             }
 
-            \Log::info('ProcessaUploadGaleria: Mídia criada', [
+            \Log::info('ProcessaUploadGaleria: Media created', [
                 'media_id' => $media->id,
                 'model_class' => $modelClass
             ]);
@@ -231,7 +231,7 @@ trait ProcessaUploadGaleria
                 ->body(__('filament-media-gallery::filament-media-gallery.notifications.upload_complete.body'))
                 ->send();
 
-            // Prepara dados para dispatch
+            // Prepare data for dispatch
             $mediaData = [
                 'id' => $media->id,
                 'url' => $media->url,
@@ -239,25 +239,25 @@ trait ProcessaUploadGaleria
                 'is_video' => $mediaType === 'video',
             ];
 
-            // Adiciona thumbnail para vídeos
+            // Add thumbnail for videos
             if ($mediaType === 'video' && method_exists($media, 'getThumbnailUrlAttribute')) {
                 $mediaData['thumbnail_url'] = $media->thumbnail_url;
             }
 
-            // Adiciona alt para imagens
+            // Add alt for images
             if ($mediaType === 'image' && isset($media->alt)) {
                 $mediaData['alt'] = $media->alt;
             }
 
-            // DISPATCH DO EVENTO PARA ATUALIZAR UI
-            $this->dispatch('galeria:media-adicionada', media: $mediaData);
+            // DISPATCH EVENT TO UPDATE UI
+            $this->dispatch('galeria:media-added', media: $mediaData);
 
-            \Log::info('ProcessaUploadGaleria: Upload concluído com sucesso', [
+            \Log::info('ProcessaUploadGaleria: Upload completed successfully', [
                 'media_id' => $media->id
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('ProcessaUploadGaleria: Erro em handleNewMediaUpload', [
+            \Log::error('ProcessaUploadGaleria: Error in handleNewMediaUpload', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -273,43 +273,43 @@ trait ProcessaUploadGaleria
     }
 
     /**
-     * Processa o upload de uma imagem editada.
+     * Processes the upload of an edited image.
      */
     public function handleEditedMediaUpload($mediaId, $fileName, $statePath): void
     {
         try {
-            \Log::info('ProcessaUploadGaleria: Iniciando handleEditedMediaUpload', [
+            \Log::info('ProcessaUploadGaleria: Starting handleEditedMediaUpload', [
                 'mediaId' => $mediaId,
                 'fileName' => $fileName,
                 'statePath' => $statePath
             ]);
 
-            // Remove o prefixo 'data.' se existir
+            // Remove 'data.' prefix if exists
             $dataKey = str_starts_with($statePath, 'data.') ? substr($statePath, 5) : $statePath;
             $uploadKey = $dataKey . '_edited_media';
 
-            // Tenta obter o arquivo de múltiplas formas (compatibilidade Livewire)
+            // Try to get file in multiple ways (Livewire compatibility)
             $tempFile = $this->data[$uploadKey] ?? $this->{$uploadKey} ?? null;
 
-            // Se não encontrou pelo uploadKey, tenta buscar o arquivo diretamente
+            // If not found by uploadKey, try to fetch file directly
             if (!$tempFile && property_exists($this, $uploadKey)) {
                 $tempFile = $this->{$uploadKey};
             }
 
             if (!$tempFile instanceof TemporaryUploadedFile) {
-                \Log::error('ProcessaUploadGaleria: Arquivo editado não encontrado', [
+                \Log::error('ProcessaUploadGaleria: Edited file not found', [
                     'uploadKey' => $uploadKey,
                     'tempFile_type' => gettype($tempFile)
                 ]);
-                throw new \Exception('Arquivo editado não encontrado.');
+                throw new \Exception('Edited file not found.');
             }
 
-            // Usa model do config
+            // Use model from config
             $imageModel = config('filament-media-gallery.image.model', Imagem::class);
             $imagem = $imageModel::find($mediaId);
 
             if (!$imagem) {
-                throw new \Exception('A imagem original não foi encontrada.');
+                throw new \Exception('Original image not found.');
             }
 
             $disk = config('filament-media-gallery.disk', 'public');
@@ -336,12 +336,12 @@ trait ProcessaUploadGaleria
                 ->body(__('filament-media-gallery::filament-media-gallery.notifications.image_updated.body'))
                 ->send();
 
-            \Log::info('ProcessaUploadGaleria: Imagem editada com sucesso', [
+            \Log::info('ProcessaUploadGaleria: Image edited successfully', [
                 'imagem_id' => $imagem->id
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('ProcessaUploadGaleria: Erro em handleEditedMediaUpload', [
+            \Log::error('ProcessaUploadGaleria: Error in handleEditedMediaUpload', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -357,37 +357,37 @@ trait ProcessaUploadGaleria
     }
 
     /**
-     * Carrega mais mídias para a galeria com paginação.
-     * FILTRA POR TIPO DE MÍDIA!
+     * Loads more media for the gallery with pagination.
+     * FILTERS BY MEDIA TYPE!
      */
-    public function carregarMaisMedias(int $pagina = 1, string $statePath): array
+    public function loadMoreMedias(int $page = 1, string $statePath): array
     {
         try {
-            \Log::info('ProcessaUploadGaleria: Carregando mais mídias', [
-                'pagina' => $pagina,
+            \Log::info('ProcessaUploadGaleria: Loading more medias', [
+                'page' => $page,
                 'statePath' => $statePath
             ]);
 
             $config = $this->getFieldConfig($statePath);
 
             if (!$config) {
-                throw new \Exception("Não foi possível obter configuração do campo '$statePath'.");
+                throw new \Exception("Unable to get configuration for field '$statePath'.");
             }
 
             $mediaType = $config['mediaType'];
             $modelClass = $config['modelClass'];
             $perPage = config('filament-media-gallery.gallery.per_page', 24);
 
-            \Log::info('ProcessaUploadGaleria: Buscando mídias', [
+            \Log::info('ProcessaUploadGaleria: Fetching medias', [
                 'mediaType' => $mediaType,
                 'modelClass' => $modelClass,
-                'pagina' => $pagina,
+                'page' => $page,
                 'perPage' => $perPage
             ]);
 
-            // Busca apenas do modelo correto (Imagem OU Video)
+            // Fetch only from correct model (Image OR Video)
             $medias = $modelClass::orderBy('created_at', 'desc')
-                ->paginate($perPage, ['*'], 'page', $pagina);
+                ->paginate($perPage, ['*'], 'page', $page);
 
             $mappedMedias = collect($medias->items())->map(function ($media) use ($mediaType) {
                 $data = [
@@ -397,12 +397,12 @@ trait ProcessaUploadGaleria
                     'is_video' => $mediaType === 'video',
                 ];
 
-                // Adiciona thumbnail_url para vídeos
+                // Add thumbnail_url for videos
                 if ($mediaType === 'video' && method_exists($media, 'getThumbnailUrlAttribute')) {
                     $data['thumbnail_url'] = $media->thumbnail_url;
                 }
 
-                // Adiciona alt text para imagens
+                // Add alt text for images
                 if ($mediaType === 'image' && isset($media->alt)) {
                     $data['alt'] = $media->alt;
                 }
@@ -410,7 +410,7 @@ trait ProcessaUploadGaleria
                 return $data;
             })->toArray();
 
-            \Log::info('ProcessaUploadGaleria: Mídias carregadas', [
+            \Log::info('ProcessaUploadGaleria: Medias loaded', [
                 'mediaType' => $mediaType,
                 'total' => count($mappedMedias),
                 'hasMorePages' => $medias->hasMorePages()
@@ -418,24 +418,24 @@ trait ProcessaUploadGaleria
 
             return [
                 'medias' => $mappedMedias,
-                'temMais' => $medias->hasMorePages(),
+                'hasMore' => $medias->hasMorePages(),
             ];
         } catch (\Exception $e) {
-            \Log::error('ProcessaUploadGaleria: Erro em carregarMaisMedias', [
+            \Log::error('ProcessaUploadGaleria: Error in loadMoreMedias', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            return ['medias' => [], 'temMais' => false];
+            return ['medias' => [], 'hasMore' => false];
         }
     }
 
     /**
-     * Atualiza o texto alternativo (alt) de uma imagem.
+     * Updates the alternative text (alt) of an image.
      */
     public function updateMediaAlt(int $mediaId, ?string $altText, string $statePath): void
     {
         try {
-            \Log::info('ProcessaUploadGaleria: Atualizando alt text', [
+            \Log::info('ProcessaUploadGaleria: Updating alt text', [
                 'mediaId' => $mediaId,
                 'altText' => $altText,
                 'statePath' => $statePath
@@ -444,15 +444,15 @@ trait ProcessaUploadGaleria
             $config = $this->getFieldConfig($statePath);
 
             if (!$config) {
-                throw new \Exception("Não foi possível obter configuração do campo '$statePath'.");
+                throw new \Exception("Unable to get configuration for field '$statePath'.");
             }
 
             $modelClass = $config['modelClass'];
             $mediaType = $config['mediaType'];
 
-            // Alt text só faz sentido para imagens
+            // Alt text only makes sense for images
             if ($mediaType !== 'image') {
-                \Log::warning('ProcessaUploadGaleria: Tentativa de atualizar alt em vídeo', [
+                \Log::warning('ProcessaUploadGaleria: Attempt to update alt on video', [
                     'mediaId' => $mediaId
                 ]);
                 return;
@@ -461,20 +461,20 @@ trait ProcessaUploadGaleria
             $imagem = $modelClass::find($mediaId);
 
             if (!$imagem) {
-                throw new \Exception('Imagem não encontrada.');
+                throw new \Exception('Image not found.');
             }
 
             $imagem->update([
                 'alt' => $altText
             ]);
 
-            \Log::info('ProcessaUploadGaleria: Alt text atualizado com sucesso', [
+            \Log::info('ProcessaUploadGaleria: Alt text updated successfully', [
                 'imagem_id' => $imagem->id,
                 'alt' => $altText
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('ProcessaUploadGaleria: Erro em updateMediaAlt', [
+            \Log::error('ProcessaUploadGaleria: Error in updateMediaAlt', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -482,9 +482,9 @@ trait ProcessaUploadGaleria
     }
 
     /**
-     * Obtém mídias disponíveis (usado na inicialização do componente)
+     * Gets available medias (used in component initialization)
      */
-    protected function getMediasDisponiveis(): array
+    protected function getAvailableMedias(): array
     {
         $modelClass = $this->getModelClass();
         $mediaType = $this->getMediaType();
@@ -501,12 +501,12 @@ trait ProcessaUploadGaleria
                 'is_video' => $mediaType === 'video',
             ];
 
-            // Adiciona thumbnail para vídeos
+            // Add thumbnail for videos
             if ($mediaType === 'video' && method_exists($media, 'getThumbnailUrlAttribute')) {
                 $data['thumbnail_url'] = $media->thumbnail_url;
             }
 
-            // Adiciona alt para imagens
+            // Add alt for images
             if ($mediaType === 'image' && isset($media->alt)) {
                 $data['alt'] = $media->alt;
             }
@@ -516,7 +516,7 @@ trait ProcessaUploadGaleria
 
         return [
             'medias' => $mappedMedias,
-            'temMais' => $medias->hasMorePages(),
+            'hasMore' => $medias->hasMorePages(),
         ];
     }
 }

@@ -1,49 +1,51 @@
 @php
-    // Carrega os assets do Cropper.js
+    // Load Cropper.js assets
    \Filament\Support\Facades\FilamentAsset::register([
        \Filament\Support\Assets\Css::make('cropper-css', 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css'),
        \Filament\Support\Assets\Js::make('cropper-js', 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js'),
    ]);
 
-   $mediaType = $getMediaType(); // 'image' ou 'video'
+   $mediaType = $getMediaType(); // 'image' or 'video'
    $modelClass = $getModelClass();
    $allowMultiple = $getAllowMultiple();
    $maxItems = $getMaxItems();
    $allowUpload = $getAllowUpload();
-   $allowImageEditor = $getAllowImageEditor() && $mediaType === 'image'; // Editor só para imagens
-    $imageEditorAspectRatios = $getImageEditorAspectRatios();
-    $dadosIniciaisGaleria = $getMediasDisponiveis();
+   $allowImageEditor = $getAllowImageEditor() && $mediaType === 'image'; // Editor only for images
+   $imageEditorAspectRatios = $getImageEditorAspectRatios();
+   $initialGalleryData = $getAvailableMedias();
 
-     // Passa as traduções para o JavaScript de forma segura
-    $translations = [
-        'limit_reached' => [
-            'title' => __('filament-media-gallery::filament-media-gallery.notifications.limit_reached.title'),
-            'single' => __('filament-media-gallery::filament-media-gallery.notifications.limit_reached.single'),
-        ],
-        'processing_error' => [
-            'title' => __('filament-media-gallery::filament-media-gallery.notifications.processing_error.title'),
-            'body' => __('filament-media-gallery::filament-media-gallery.notifications.processing_error.body'),
-        ],
-        'upload_error' => [
-            'title' => __('filament-media-gallery::filament-media-gallery.notifications.upload_error.title'),
-            'body' => __('filament-media-gallery::filament-media-gallery.notifications.upload_error.body'),
-        ],
-        'image_edited_success' => [
-            'title' => __('filament-media-gallery::filament-media-gallery.notifications.image_edited_success.title'),
-            'body' => __('filament-media-gallery::filament-media-gallery.notifications.image_edited_success.body'),
-        ],
-        'save_error' => [
-            'title' => __('filament-media-gallery::filament-media-gallery.notifications.save_error.title'),
-            'body' => __('filament-media-gallery::filament-media-gallery.notifications.save_error.body'),
-        ],
-    ];
+   // Pass translations to JavaScript safely
+   $translations = [
+       'limit_reached' => [
+           'title' => __('filament-media-gallery::filament-media-gallery.notifications.limit_reached.title'),
+           'single' => __('filament-media-gallery::filament-media-gallery.notifications.limit_reached.single'),
+       ],
+       'processing_error' => [
+           'title' => __('filament-media-gallery::filament-media-gallery.notifications.processing_error.title'),
+           'body' => __('filament-media-gallery::filament-media-gallery.notifications.processing_error.body'),
+       ],
+       'upload_error' => [
+           'title' => __('filament-media-gallery::filament-media-gallery.notifications.upload_error.title'),
+           'body' => __('filament-media-gallery::filament-media-gallery.notifications.upload_error.body'),
+       ],
+       'image_edited_success' => [
+           'title' => __('filament-media-gallery::filament-media-gallery.notifications.image_edited_success.title'),
+           'body' => __('filament-media-gallery::filament-media-gallery.notifications.image_edited_success.body'),
+       ],
+       'save_error' => [
+           'title' => __('filament-media-gallery::filament-media-gallery.notifications.save_error.title'),
+           'body' => __('filament-media-gallery::filament-media-gallery.notifications.save_error.body'),
+       ],
+   ];
 
-   // IMPORTANTE: Busca apenas as mídias DO TIPO CORRETO que já estão selecionadas
-   $mediasSelecionadasInicialmente = $modelClass::find($getState() ?? [])->map(fn ($media) => [
+   // IMPORTANT: Fetch only CORRECT TYPE medias that are already selected
+   $initiallySelectedMedias = $modelClass::find($getState() ?? [])->map(fn ($media) => [
        'id' => $media->id,
        'url' => $media->url,
        'nome_original' => $media->nome_original,
        'is_video' => $mediaType === 'video',
+       'alt' => $mediaType === 'image' && isset($media->alt) ? $media->alt : null,
+       'thumbnail_url' => $mediaType === 'video' && method_exists($media, 'getThumbnailUrlAttribute') ? $media->thumbnail_url : null,
    ]);
 
    $fieldId = 'galeria-midia-' . $getStatePath();
@@ -57,30 +59,31 @@
             state: $wire.get('{{ $getStatePath() }}') || [],
             statePath: '{{ $getStatePath() }}',
             mediaType: @js($mediaType),
-            initialMedias: @js($dadosIniciaisGaleria['medias']),
-            temMaisPaginas: @js($dadosIniciaisGaleria['temMais']),
+            initialMedias: @js($initialGalleryData['medias']),
+            hasMorePages: @js($initialGalleryData['hasMore']),
             allowMultiple: @js($allowMultiple),
             maxItems: @js($maxItems),
             aspectRatios: @js($imageEditorAspectRatios ?? []),
-            translations: @js($translations)
+            translations: @js($translations),
+            selectedMedias: @js($initiallySelectedMedias)
         })"
         x-init="init()"
     >
 
-        {{-- Mídias Selecionadas --}}
-        <div x-show="selecionadas.length > 0" class="g-section">
+        {{-- Selected Medias --}}
+        <div x-show="selected.length > 0" class="g-section">
             <label class="g-label">
                 <span x-text="mediaType === 'image' ? '📸 {{ __('filament-media-gallery::filament-media-gallery.labels.selected_images') }}' : '🎬 {{ __('filament-media-gallery::filament-media-gallery.labels.selected_videos') }}'"></span>
             </label>
             <div class="g-grid">
-                {{-- Renderiza as mídias disponíveis e o Alpine controla a visibilidade --}}
-                <template x-for="media in mediasDisponiveis" :key="media.id">
+                {{-- Render available medias and Alpine controls visibility --}}
+                <template x-for="media in availableMedias" :key="media.id">
                     <div x-show="isSelected(media.id)" class="g-thumbnail g-thumbnail-selected group">
-                        {{-- Preview de Imagem --}}
+                        {{-- Image Preview --}}
                         <template x-if="mediaType === 'image' && !media.is_video">
-                            <img :src="media.url" :alt="media.nome_original">
+                            <img :src="media.url" :alt="media.alt || media.nome_original">
                         </template>
-                        {{-- Preview de Vídeo (usa thumbnail se disponível) --}}
+                        {{-- Video Preview (uses thumbnail if available) --}}
                         <template x-if="mediaType === 'video' && media.is_video">
                             <div class="g-video-preview">
                                 <template x-if="media.thumbnail_url">
@@ -102,7 +105,7 @@
                         <div class="g-thumbnail-actions">
                             @if($allowImageEditor)
                                 <button type="button" x-show="mediaType === 'image' && !media.is_video"
-                                        @click.stop="abrirEditor(media.id, media.url)"
+                                        @click.stop="openEditor(media.id, media.url)"
                                         title="{{ __('filament-media-gallery::filament-media-gallery.buttons.edit_image') }}"
                                         class="g-thumbnail-btn-edit">
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,7 +115,7 @@
                             @endif
 
                             <button type="button"
-                                    @click.stop="removerMedia(media.id)"
+                                    @click.stop="removeMedia(media.id)"
                                     title="{{ __('filament-media-gallery::filament-media-gallery.buttons.remove_item') }}"
                                     class="g-thumbnail-btn-remove">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,7 +129,42 @@
             </div>
         </div>
 
-        {{-- Arquivos Carregados para Upload --}}
+        {{-- Alt Text Area for Selected Images --}}
+        <div x-show="selected.length > 0 && mediaType === 'image'" class="g-alt-section">
+            <div class="g-alt-section-title">
+                ✏️ {{ __('filament-media-gallery::filament-media-gallery.labels.alt_texts') }}
+            </div>
+
+            <template x-for="media in availableMedias" :key="'alt-' + media.id">
+                <div x-show="isSelected(media.id) && !media.is_video" class="g-alt-item">
+                    <!-- Image Thumbnail -->
+                    <div class="g-alt-item-thumbnail">
+                        <img :src="media.url" :alt="media.alt || media.nome_original">
+                    </div>
+
+                    <!-- Content: Name + Input -->
+                    <div class="g-alt-item-content">
+                        <div class="g-alt-item-name" x-text="media.nome_original"></div>
+
+                        <div class="g-alt-input-wrapper">
+                            <label class="g-alt-label" :for="'alt-input-' + media.id">
+                                {{ __('filament-media-gallery::filament-media-gallery.labels.alternative_text') }}
+                            </label>
+                            <input
+                                type="text"
+                                :id="'alt-input-' + media.id"
+                                class="g-alt-input"
+                                :value="media.alt || ''"
+                                @input="updateAltText(media.id, $event.target.value)"
+                                :placeholder="__('filament-media-gallery::filament-media-gallery.placeholders.describe_image')"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        {{-- Files Uploaded for Upload --}}
         @if($allowUpload)
             <div x-show="uploadedFiles.length > 0" class="g-section">
                 <label class="g-label">
@@ -135,7 +173,7 @@
                 <div class="g-grid">
                     <template x-for="(file, index) in uploadedFiles" :key="file.name">
                         <div class="g-thumbnail g-thumbnail-upload group">
-                            {{-- Preview condicional baseado no tipo --}}
+                            {{-- Conditional preview based on type --}}
                             <template x-if="mediaType === 'image'">
                                 <img :src="URL.createObjectURL(file)" :alt="file.name">
                             </template>
@@ -158,13 +196,13 @@
             </div>
         @endif
 
-        {{-- Área de Botões de Ação - SEPARADA --}}
+        {{-- Action Buttons Area - SEPARATED --}}
         <div class="g-actions-container">
             <div class="g-actions-title">
                 ⚡ {{ __('filament-media-gallery::filament-media-gallery.labels.available_actions') }}
             </div>
 
-            {{-- INDICADOR DE PROGRESSO DO UPLOAD --}}
+            {{-- UPLOAD PROGRESS INDICATOR --}}
             <div x-show="uploading"
                  x-transition:enter="transition ease-out duration-200"
                  x-transition:enter-start="opacity-0 transform scale-95"
@@ -179,7 +217,7 @@
 
             <div class="g-actions">
                 <button type="button"
-                        @click="modalAberto = true"
+                        @click="modalOpen = true"
                         class="g-btn g-btn-primary">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -203,18 +241,18 @@
             </div>
         </div>
 
-        {{-- Modal da Galeria --}}
-        <div x-show="modalAberto"
+        {{-- Gallery Modal --}}
+        <div x-show="modalOpen"
              x-cloak
              class="g-modal-overlay"
              style="display: none;">
             <div class="g-modal-container">
-                <div @click.away="modalAberto = false" class="g-modal-content">
+                <div @click.away="modalOpen = false" class="g-modal-content">
                     <div class="g-modal-header">
                         <h3 class="g-modal-title">
                             <span x-text="mediaType === 'image' ? '{{ __('filament-media-gallery::filament-media-gallery.labels.image_gallery') }}' : '{{ __('filament-media-gallery::filament-media-gallery.labels.video_gallery') }}'"></span>
                         </h3>
-                        <button type="button" @click="modalAberto = false" class="g-modal-close-btn">
+                        <button type="button" @click="modalOpen = false" class="g-modal-close-btn">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
@@ -222,14 +260,14 @@
                     </div>
 
                     <div class="g-modal-grid">
-                        <template x-if="mediasDisponiveis.length > 0">
-                            <template x-for="media in mediasDisponiveis" :key="media.id">
+                        <template x-if="availableMedias.length > 0">
+                            <template x-for="media in availableMedias" :key="media.id">
                                 <div @click="toggleMedia(media.id)"
                                      :class="{ 'g-modal-thumb-selected': isSelected(media.id) }"
                                      class="g-modal-thumb">
-                                    {{-- Exibe imagem OU vídeo baseado no mediaType do campo --}}
+                                    {{-- Display image OR video based on field mediaType --}}
                                     <template x-if="mediaType === 'image' && !media.is_video">
-                                        <img :src="media.url" :alt="media.nome_original" class="g-modal-thumb-img">
+                                        <img :src="media.url" :alt="media.alt || media.nome_original" class="g-modal-thumb-img">
                                     </template>
                                     <template x-if="mediaType === 'video' && media.is_video">
                                         <div class="g-video-preview g-modal-video-preview">
@@ -258,7 +296,7 @@
                                 </div>
                             </template>
                         </template>
-                        <template x-if="mediasDisponiveis.length === 0">
+                        <template x-if="availableMedias.length === 0">
                             <div class="g-modal-empty">
                                 <span x-text="mediaType === 'image' ? '{{ __('filament-media-gallery::filament-media-gallery.empty.no_images') }}' : '{{ __('filament-media-gallery::filament-media-gallery.empty.no_videos') }}'"></span>
                             </div>
@@ -267,16 +305,16 @@
 
                     <div class="g-modal-footer">
                         <button type="button"
-                                @click="modalAberto = false"
+                                @click="modalOpen = false"
                                 class="g-btn g-btn-primary">
                             {{ __('filament-media-gallery::filament-media-gallery.buttons.confirm_selection') }}
                         </button>
                         <button type="button"
-                                x-show="temMaisPaginas"
-                                @click="carregarMais()"
-                                :disabled="carregandoMais"
+                                x-show="hasMorePages"
+                                @click="loadMore()"
+                                :disabled="loadingMore"
                                 class="g-btn g-btn-secondary"
-                                x-text="carregandoMais ? '{{ __('filament-media-gallery::filament-media-gallery.buttons.loading') }}' : '{{ __('filament-media-gallery::filament-media-gallery.buttons.load_more') }}'">
+                                x-text="loadingMore ? '{{ __('filament-media-gallery::filament-media-gallery.buttons.loading') }}' : '{{ __('filament-media-gallery::filament-media-gallery.buttons.load_more') }}'">
                             {{ __('filament-media-gallery::filament-media-gallery.buttons.load_more') }}
                         </button>
                     </div>
@@ -284,25 +322,25 @@
             </div>
         </div>
 
-        {{-- Modal do Editor de Imagem (APENAS PARA IMAGENS) --}}
+        {{-- Image Editor Modal (ONLY FOR IMAGES) --}}
         @if($allowImageEditor)
-            <div x-show="editorAberto" x-cloak class="g-modal-overlay" style="display: none;">
+            <div x-show="editorOpen" x-cloak class="g-modal-overlay" style="display: none;">
                 <div class="g-modal-container">
-                    <div @click.away="fecharEditor()" class="g-modal-content g-modal-editor">
+                    <div @click.away="closeEditor()" class="g-modal-content g-modal-editor">
 
                         <div class="g-modal-header">
                             <h3 class="g-modal-title">{{ __('filament-media-gallery::filament-media-gallery.labels.image_editor') }}</h3>
-                            <button type="button" @click="fecharEditor()" class="g-modal-close-btn">
+                            <button type="button" @click="closeEditor()" class="g-modal-close-btn">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                             </button>
                         </div>
 
-                        <!-- Toolbar do Editor -->
+                        <!-- Editor Toolbar -->
                         <div class="g-editor-toolbar">
                             <div class="g-toolbar-group">
-                                <button type="button" @click="resetarImagem()" class="g-toolbar-btn" title="{{ __('filament-media-gallery::filament-media-gallery.editor.reset') }}">
+                                <button type="button" @click="resetImage()" class="g-toolbar-btn" title="{{ __('filament-media-gallery::filament-media-gallery.editor.reset') }}">
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                                     </svg>
@@ -310,12 +348,12 @@
                             </div>
 
                             <div class="g-toolbar-group">
-                                <button type="button" @click="rotacionar(-90)" class="g-toolbar-btn" title="{{ __('filament-media-gallery::filament-media-gallery.editor.rotate_left') }}">
+                                <button type="button" @click="rotate(-90)" class="g-toolbar-btn" title="{{ __('filament-media-gallery::filament-media-gallery.editor.rotate_left') }}">
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
                                     </svg>
                                 </button>
-                                <button type="button" @click="rotacionar(90)" class="g-toolbar-btn" title="{{ __('filament-media-gallery::filament-media-gallery.editor.rotate_right') }}">
+                                <button type="button" @click="rotate(90)" class="g-toolbar-btn" title="{{ __('filament-media-gallery::filament-media-gallery.editor.rotate_right') }}">
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6"></path>
                                     </svg>
@@ -323,12 +361,12 @@
                             </div>
 
                             <div class="g-toolbar-group">
-                                <button type="button" @click="espelharHorizontal()" class="g-toolbar-btn" title="{{ __('filament-media-gallery::filament-media-gallery.editor.flip_horizontal') }}">
+                                <button type="button" @click="flipHorizontal()" class="g-toolbar-btn" title="{{ __('filament-media-gallery::filament-media-gallery.editor.flip_horizontal') }}">
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
                                     </svg>
                                 </button>
-                                <button type="button" @click="espelharVertical()" class="g-toolbar-btn" title="{{ __('filament-media-gallery::filament-media-gallery.editor.flip_vertical') }}">
+                                <button type="button" @click="flipVertical()" class="g-toolbar-btn" title="{{ __('filament-media-gallery::filament-media-gallery.editor.flip_vertical') }}">
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
                                     </svg>
@@ -351,7 +389,7 @@
                             <template x-if="aspectRatios && aspectRatios.length > 0">
                                 <div class="g-toolbar-group">
                                     <label class="g-toolbar-label">{{ __('filament-media-gallery::filament-media-gallery.editor.aspect_ratio') }}:</label>
-                                    <select @change="mudarAspectRatio($event.target.value)" class="g-toolbar-select">
+                                    <select @change="changeAspectRatio($event.target.value)" class="g-toolbar-select">
                                         <option value="free" :selected="currentAspectRatio === 'free'">{{ __('filament-media-gallery::filament-media-gallery.editor.free') }}</option>
                                         <template x-for="(ratio, index) in aspectRatios" :key="index">
                                             <option :value="ratio" :selected="currentAspectRatio === ratio" x-text="ratio"></option>
@@ -369,12 +407,12 @@
 
                         <div class="g-modal-footer">
                             <button type="button"
-                                    @click="fecharEditor()"
+                                    @click="closeEditor()"
                                     class="g-btn g-btn-secondary">
                                 {{ __('filament-media-gallery::filament-media-gallery.buttons.cancel') }}
                             </button>
                             <button type="button"
-                                    @click="salvarImagemEditada()"
+                                    @click="saveEditedImage()"
                                     class="g-btn g-btn-primary">
                                 {{ __('filament-media-gallery::filament-media-gallery.buttons.save_changes') }}
                             </button>
@@ -386,6 +424,7 @@
 
     </div>
 </x-dynamic-component>
+
 <style>
     /* [TODO O CSS ANTERIOR PERMANECE IGUAL] */
     /* Container Principal */
@@ -1055,408 +1094,409 @@
 <script>
     function imageGalleryPicker(config) {
         return {
-            selecionadas: config.state,
-            mediasDisponiveis: config.initialMedias,
-            modalAberto: false,
-            mediaType: config.mediaType, // 'image' ou 'video'
-            uploadedFiles: [],
-            editorAberto: false,
-            cropper: null,
-            imagemParaEditarId: null,
-            imagemParaEditarUrl: null,
-            arquivoParaEditar: null,
-            aspectRatios: config.aspectRatios,
-            currentAspectRatio: config.aspectRatios && config.aspectRatios.length > 0 ? config.aspectRatios[0] : 'free',
-            uploading: false,
-            uploadProgress: '',
-            paginaAtual: 1,
-            temMaisPaginas: config.temMaisPaginas,
-            carregandoMais: false,
+                selected: config.state,
+                availableMedias: config.initialMedias,
+                modalOpen: false,
+                mediaType: config.mediaType, // 'image' or 'video'
+                uploadedFiles: [],
+                editorOpen: false,
+                cropper: null,
+                imageToEditId: null,
+                imageToEditUrl: null,
+                fileToEdit: null,
+                aspectRatios: config.aspectRatios,
+                currentAspectRatio: config.aspectRatios && config.aspectRatios.length > 0 ? config.aspectRatios[0] : 'free',
+                uploading: false,
+                uploadProgress: '',
+                currentPage: 1,
+                hasMorePages: config.hasMorePages,
+                loadingMore: false,
 
-            init() {
-                console.log('🖼️ Galeria Iniciada - Tipo:', this.mediaType, 'Mídias:', this.mediasDisponiveis.length);
-                console.log('Estado inicial:', JSON.parse(JSON.stringify(this.selecionadas)));
+                init() {
+                    console.log('🖼️ Gallery Initialized - Type:', this.mediaType, 'Medias:', this.availableMedias.length);
+                    console.log('Initial state:', JSON.parse(JSON.stringify(this.selected)));
 
-                // Mescla as mídias selecionadas com alt text aos dados disponíveis (se existir)
-                if (config.selectedMedias && config.selectedMedias.length > 0) {
-                    config.selectedMedias.forEach(selectedMedia => {
-                        const existingIndex = this.mediasDisponiveis.findIndex(m => m.id === selectedMedia.id);
-                        if (existingIndex !== -1) {
-                            // Atualiza a mídia existente com os dados completos (incluindo alt)
-                            this.mediasDisponiveis[existingIndex] = {
-                                ...this.mediasDisponiveis[existingIndex],
-                                ...selectedMedia
-                            };
-                        } else {
-                            // Adiciona a mídia se não existir
-                            this.mediasDisponiveis.push(selectedMedia);
-                        }
-                    });
-                    console.log('✅ Mídias selecionadas mescladas com alt text');
-                }
-
-                // Watch para mudanças no state do Livewire
-                this.$watch('$wire.get(\'' + config.statePath + '\')', (newState) => {
-                    this.selecionadas = newState || [];
-                });
-
-                // LISTENER 1: Recebe mídias filtradas por tipo (usado em carregarMais)
-                Livewire.on('galeria:medias-atualizadas', ({ medias }) => {
-                    console.log('🔄 Recebendo mídias filtradas:', medias);
-                    medias.forEach(mediaDaGaleria => {
-                        // Só adiciona se for do tipo correto
-                        if (mediaDaGaleria.is_video === (this.mediaType === 'video')) {
-                            const existingIndex = this.mediasDisponiveis.findIndex(m => m.id === mediaDaGaleria.id);
-                            if (existingIndex === -1) {
-                                this.mediasDisponiveis.push(mediaDaGaleria);
+                    // Merge selected medias with alt text to available data (if exists)
+                    if (config.selectedMedias && config.selectedMedias.length > 0) {
+                        config.selectedMedias.forEach(selectedMedia => {
+                            const existingIndex = this.availableMedias.findIndex(m => m.id === selectedMedia.id);
+                            if (existingIndex !== -1) {
+                                // Update existing media with complete data (including alt)
+                                this.availableMedias[existingIndex] = {
+                                    ...this.availableMedias[existingIndex],
+                                    ...selectedMedia
+                                };
+                            } else {
+                                // Add media if doesn't exist
+                                this.availableMedias.push(selectedMedia);
                             }
-                        }
-                    });
-                });
-
-                // LISTENER 2: Nova mídia adicionada (upload ou edição)
-                Livewire.on('galeria:media-adicionada', ({ media }) => {
-                    console.log('✨ Nova mídia adicionada:', media);
-
-                    // Verifica se é do tipo correto antes de adicionar
-                    if (media.is_video === (this.mediaType === 'video')) {
-                        const existingIndex = this.mediasDisponiveis.findIndex(m => m.id === media.id);
-
-                        if (existingIndex !== -1) {
-                            // Atualiza mídia existente (caso de edição)
-                            this.mediasDisponiveis[existingIndex] = {
-                                ...this.mediasDisponiveis[existingIndex],
-                                ...media
-                            };
-                            console.log('🔄 Mídia atualizada:', media.id);
-                        } else {
-                            // Adiciona nova mídia
-                            this.mediasDisponiveis.push(media);
-                            console.log('➕ Nova mídia adicionada à lista:', media.id);
-                        }
-
-                        // Auto-seleciona se não for múltiplo
-                        if (!config.allowMultiple) {
-                            this.selecionadas = [media.id];
-                            this.$wire.set(config.statePath, this.selecionadas);
-                        } else if (config.allowMultiple && !this.isSelected(media.id)) {
-                            // Auto-seleciona se múltiplo e não atingiu o limite
-                            if (!config.maxItems || this.selecionadas.length < config.maxItems) {
-                                this.selecionadas.push(media.id);
-                                this.$wire.set(config.statePath, this.selecionadas);
-                            }
-                        }
+                        });
+                        console.log('✅ Selected medias merged with alt text');
                     }
-                });
-            },
 
-            carregarMais() {
-                if (this.carregandoMais || !this.temMaisPaginas) return;
+                    // Watch for Livewire state changes
+                    this.$watch('$wire.get(\'' + config.statePath + '\')', (newState) => {
+                        this.selected = newState || [];
+                    });
 
-                this.carregandoMais = true;
-                this.paginaAtual++;
+                    // LISTENER 1: Receive filtered medias by type (used in loadMore)
+                    Livewire.on('galeria:medias-updated', ({ medias }) => {
+                        console.log('🔄 Receiving filtered medias:', medias);
+                        medias.forEach(galleryMedia => {
+                            // Only add if correct type
+                            if (galleryMedia.is_video === (this.mediaType === 'video')) {
+                                const existingIndex = this.availableMedias.findIndex(m => m.id === galleryMedia.id);
+                                if (existingIndex === -1) {
+                                    this.availableMedias.push(galleryMedia);
+                                }
+                            }
+                        });
+                    });
 
-                console.log(`📄 Carregando página ${this.paginaAtual} de ${this.mediaType}...`);
+                    // LISTENER 2: New media added (upload or edit)
+                    Livewire.on('galeria:media-added', ({ media }) => {
+                        console.log('✨ New media added:', media);
 
-                this.$wire.call('carregarMaisMedias', this.paginaAtual, config.statePath).then(resultado => {
-                    // Filtra apenas o tipo correto (proteção extra)
-                    const mediasFiltradas = resultado.medias.filter(m =>
-                        m.is_video === (this.mediaType === 'video')
-                    );
+                        // Check if it's the correct type before adding
+                        if (media.is_video === (this.mediaType === 'video')) {
+                            const existingIndex = this.availableMedias.findIndex(m => m.id === media.id);
 
-                    this.mediasDisponiveis.push(...mediasFiltradas);
-                    this.temMaisPaginas = resultado.temMais;
-                    this.carregandoMais = false;
-                    console.log(`✅ Página ${this.paginaAtual} carregada. Total: ${this.mediasDisponiveis.length}`);
-                }).catch(error => {
-                    console.error('❌ Erro ao carregar mais mídias:', error);
-                    this.carregandoMais = false;
-                });
-            },
+                            if (existingIndex !== -1) {
+                                // Update existing media (edit case)
+                                this.availableMedias[existingIndex] = {
+                                    ...this.availableMedias[existingIndex],
+                                    ...media
+                                };
+                                console.log('🔄 Media updated:', media.id);
+                            } else {
+                                // Add new media
+                                this.availableMedias.push(media);
+                                console.log('➕ New media added to list:', media.id);
+                            }
 
-            toggleMedia(mediaId) {
-                console.log(`🔄 Toggling mídia: ${mediaId}`);
+                            // Auto-select if not multiple
+                            if (!config.allowMultiple) {
+                                this.selected = [media.id];
+                                this.$wire.set(config.statePath, this.selected);
+                            } else if (config.allowMultiple && !this.isSelected(media.id)) {
+                                // Auto-select if multiple and hasn't reached limit
+                                if (!config.maxItems || this.selected.length < config.maxItems) {
+                                    this.selected.push(media.id);
+                                    this.$wire.set(config.statePath, this.selected);
+                                }
+                            }
+                        }
+                    });
+                },
 
-                // Busca a mídia completa com alt text
-                const media = this.mediasDisponiveis.find(m => m.id === mediaId);
-                if (media && media.alt) {
-                    console.log('✅ Mídia selecionada tem alt text:', media.alt);
-                }
+                loadMore() {
+                    if (this.loadingMore || !this.hasMorePages) return;
 
-                if (config.allowMultiple) {
-                    const index = this.selecionadas.indexOf(mediaId);
-                    if (index > -1) {
-                        this.selecionadas.splice(index, 1);
-                        console.log('➖ Mídia removida da seleção');
+                    this.loadingMore = true;
+                    this.currentPage++;
+
+                    console.log(`📄 Loading page ${this.currentPage} of ${this.mediaType}...`);
+
+                    this.$wire.call('loadMoreMedias', this.currentPage, config.statePath).then(result => {
+                        // Filter only correct type (extra protection)
+                        const filteredMedias = result.medias.filter(m =>
+                            m.is_video === (this.mediaType === 'video')
+                        );
+
+                        this.availableMedias.push(...filteredMedias);
+                        this.hasMorePages = result.hasMore;
+                        this.loadingMore = false;
+                        console.log(`✅ Page ${this.currentPage} loaded. Total: ${this.availableMedias.length}`);
+                    }).catch(error => {
+                        console.error('❌ Error loading more medias:', error);
+                        this.loadingMore = false;
+                    });
+                },
+
+                toggleMedia(mediaId) {
+                    console.log(`🔄 Toggling media: ${mediaId}`);
+
+                    // Fetch complete media with alt text
+                    const media = this.availableMedias.find(m => m.id === mediaId);
+                    if (media && media.alt) {
+                        console.log('✅ Selected media has alt text:', media.alt);
+                    }
+
+                    if (config.allowMultiple) {
+                        const index = this.selected.indexOf(mediaId);
+                        if (index > -1) {
+                            this.selected.splice(index, 1);
+                            console.log('➖ Media removed from selection');
+                        } else {
+                            if (config.maxItems && this.selected.length >= config.maxItems) {
+                                console.warn('⚠️ Maximum items reached:', config.maxItems);
+                                new FilamentNotification()
+                                    .title(config.translations.limit_reached.title)
+                                    .warning()
+                                    .body(config.translations.limit_reached.body ||
+                                        'Maximum of ' + config.maxItems + (this.mediaType === 'image' ? ' images' : ' videos') + ' allowed')
+                                    .send();
+                                return;
+                            }
+                            this.selected.push(mediaId);
+                            console.log('➕ Media added to selection');
+                        }
                     } else {
-                        if (config.maxItems && this.selecionadas.length >= config.maxItems) {
-                            console.warn('⚠️ Máximo de itens atingido:', config.maxItems);
-                            new FilamentNotification()
-                                .title(config.translations.limit_reached.title)
-                                .warning()
-                                .body(config.translations.limit_reached.body ||
-                                    'Máximo de ' + config.maxItems + (this.mediaType === 'image' ? ' imagens' : ' vídeos') + ' permitido')
-                                .send();
-                            return;
-                        }
-                        this.selecionadas.push(mediaId);
-                        console.log('➕ Mídia adicionada à seleção');
+                        this.selected = this.isSelected(mediaId) ? [] : [mediaId];
+                        console.log('🔄 Single selection updated');
                     }
-                } else {
-                    this.selecionadas = this.isSelected(mediaId) ? [] : [mediaId];
-                    console.log('🔄 Seleção única atualizada');
-                }
 
-                console.log('📊 Estado após toggle:', JSON.parse(JSON.stringify(this.selecionadas)));
-                this.$wire.set(config.statePath, this.selecionadas);
-            },
+                    console.log('📊 State after toggle:', JSON.parse(JSON.stringify(this.selected)));
+                    this.$wire.set(config.statePath, this.selected);
+                },
 
-            removerMedia(mediaId) {
-                const index = this.selecionadas.indexOf(mediaId);
-                console.log(`🗑️ Removendo mídia: ${mediaId}, index: ${index}`);
+                removeMedia(mediaId) {
+                    const index = this.selected.indexOf(mediaId);
+                    console.log(`🗑️ Removing media: ${mediaId}, index: ${index}`);
 
-                if (index > -1) {
-                    this.selecionadas.splice(index, 1);
-                    console.log('✅ Mídia removida da seleção');
-                }
+                    if (index > -1) {
+                        this.selected.splice(index, 1);
+                        console.log('✅ Media removed from selection');
+                    }
 
-                this.$wire.set(config.statePath, this.selecionadas);
-            },
+                    this.$wire.set(config.statePath, this.selected);
+                },
 
-            isSelected(mediaId) {
-                const numericId = parseInt(mediaId, 10);
-                return this.selecionadas.map(id => parseInt(id, 10)).includes(numericId);
-            },
+                isSelected(mediaId) {
+                    const numericId = parseInt(mediaId, 10);
+                    return this.selected.map(id => parseInt(id, 10)).includes(numericId);
+                },
 
-            handleMediaUpload(event) {
-                const file = event.target.files[0];
-                console.log('📤 Upload iniciado:', file?.name);
+                handleMediaUpload(event) {
+                    const file = event.target.files[0];
+                    console.log('📤 Upload started:', file?.name);
 
-                if (!file) {
-                    console.warn('⚠️ Nenhum arquivo selecionado');
-                    return;
-                }
+                    if (!file) {
+                        console.warn('⚠️ No file selected');
+                        return;
+                    }
 
-                // Verifica limite de seleção única
-                if (!config.allowMultiple && this.selecionadas.length > 0) {
-                    new FilamentNotification()
-                        .title(config.translations.limit_reached.title)
-                        .warning()
-                        .body(config.translations.limit_reached.single)
-                        .send();
-                    event.target.value = '';
-                    return;
-                }
-
-                this.uploading = true;
-                this.uploadProgress = `Enviando ${file.name}...`;
-
-                // Nome da propriedade onde o Livewire vai armazenar o arquivo
-                const uploadPropertyName = config.statePath + '_new_media';
-                console.log('📦 Upload property name:', uploadPropertyName);
-
-                this.$wire.upload(
-                    uploadPropertyName,
-                    file,
-                    (uploadedFilename) => {
-                        console.log('✅ Upload concluído:', uploadedFilename);
-                        console.log('🔧 Chamando handleNewMediaUpload...');
-
-                        this.$wire.call('handleNewMediaUpload', uploadedFilename, config.statePath)
-                            .then(() => {
-                                console.log('✨ Processamento concluído com sucesso');
-                                this.uploading = false;
-                                this.uploadProgress = '';
-                                event.target.value = '';
-                            })
-                            .catch((error) => {
-                                console.error('❌ Erro no processamento:', error);
-                                this.uploading = false;
-                                this.uploadProgress = '';
-                                event.target.value = '';
-                                new FilamentNotification()
-                                    .title(config.translations.processing_error.title)
-                                    .danger()
-                                    .body(config.translations.processing_error.body)
-                                    .send();
-                            });
-                    },
-                    (error) => {
-                        console.error('❌ Erro no upload:', error);
-                        this.uploading = false;
-                        this.uploadProgress = '';
-                        event.target.value = '';
+                    // Check single selection limit
+                    if (!config.allowMultiple && this.selected.length > 0) {
                         new FilamentNotification()
-                            .title(config.translations.upload_error.title)
-                            .danger()
-                            .body(config.translations.upload_error.body)
+                            .title(config.translations.limit_reached.title)
+                            .warning()
+                            .body(config.translations.limit_reached.single)
                             .send();
-                    },
-                    (event) => {
-                        const progress = Math.round(event.detail.progress);
-                        this.uploadProgress = `Enviando: ${progress}%`;
-                        console.log(`📊 Progresso: ${progress}%`);
+                        event.target.value = '';
+                        return;
                     }
-                );
-            },
 
-            removeUploadedFile(index) {
-                console.log(`🗑️ Removendo arquivo do index: ${index}`);
-                this.uploadedFiles.splice(index, 1);
-            },
+                    this.uploading = true;
+                    this.uploadProgress = `Uploading ${file.name}...`;
 
-            async abrirEditor(imagemId, imagemUrl) {
-                // Editor só funciona para imagens
-                if (this.mediaType !== 'image') {
-                    console.warn('⚠️ Editor disponível apenas para imagens');
-                    return;
-                }
+                    // Property name where Livewire will store the file
+                    const uploadPropertyName = config.statePath + '_new_media';
+                    console.log('📦 Upload property name:', uploadPropertyName);
 
-                console.log(`🖌️ Abrindo editor - ID: ${imagemId}`);
-                this.imagemParaEditarId = imagemId;
-                this.imagemParaEditarUrl = imagemUrl;
+                    this.$wire.upload(
+                        uploadPropertyName,
+                        file,
+                        (uploadedFilename) => {
+                            console.log('✅ Upload completed:', uploadedFilename);
+                            console.log('🔧 Calling handleNewMediaUpload...');
 
-                try {
-                    const response = await fetch(imagemUrl);
-                    const blob = await response.blob();
-                    const file = new File([blob], imagemUrl.split('/').pop(), { type: blob.type });
-                    this.arquivoParaEditar = file;
+                            this.$wire.call('handleNewMediaUpload', uploadedFilename, config.statePath)
+                                .then(() => {
+                                    console.log('✨ Processing completed successfully');
+                                    this.uploading = false;
+                                    this.uploadProgress = '';
+                                    event.target.value = '';
+                                })
+                                .catch((error) => {
+                                    console.error('❌ Processing error:', error);
+                                    this.uploading = false;
+                                    this.uploadProgress = '';
+                                    event.target.value = '';
+                                    new FilamentNotification()
+                                        .title(config.translations.processing_error.title)
+                                        .danger()
+                                        .body(config.translations.processing_error.body)
+                                        .send();
+                                });
+                        },
+                        (error) => {
+                            console.error('❌ Upload error:', error);
+                            this.uploading = false;
+                            this.uploadProgress = '';
+                            event.target.value = '';
+                            new FilamentNotification()
+                                .title(config.translations.upload_error.title)
+                                .danger()
+                                .body(config.translations.upload_error.body)
+                                .send();
+                        },
+                        (event) => {
+                            const progress = Math.round(event.detail.progress);
+                            this.uploadProgress = `Uploading: ${progress}%`;
+                            console.log(`📊 Progress: ${progress}%`);
+                        }
+                    );
+                },
 
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        this.$refs.imageEditorCanvas.src = e.target.result;
-                        this.editorAberto = true;
-                        this.$nextTick(() => this.initCropper());
-                    };
-                    reader.readAsDataURL(file);
-                } catch (error) {
-                    console.error('❌ Erro ao carregar imagem:', error);
-                    new FilamentNotification()
-                        .title(config.translations.save_error.title || 'Erro ao Carregar')
-                        .danger()
-                        .body('Não foi possível carregar a imagem.')
-                        .send();
-                }
-            },
+                removeUploadedFile(index) {
+                    console.log(`🗑️ Removing file at index: ${index}`);
+                    this.uploadedFiles.splice(index, 1);
+                },
 
-            fecharEditor() {
-                console.log('🚪 Fechando editor.');
-                this.editorAberto = false;
-                if (this.cropper) {
-                    this.cropper.destroy();
-                    this.cropper = null;
-                }
-                this.$refs.imageEditorCanvas.src = '';
-                this.imagemParaEditarId = null;
-                this.imagemParaEditarUrl = null;
-                this.arquivoParaEditar = null;
-            },
+                async openEditor(imageId, imageUrl) {
+                    // Editor only works for images
+                    if (this.mediaType !== 'image') {
+                        console.warn('⚠️ Editor available only for images');
+                        return;
+                    }
 
-            initCropper() {
-                console.log('🔧 Inicializando Cropper.js');
-                if (this.cropper) {
-                    this.cropper.destroy();
-                }
-                this.cropper = new Cropper(this.$refs.imageEditorCanvas, {
-                    aspectRatio: this.getAspectRatioValue(this.currentAspectRatio),
-                    viewMode: 2,
-                    dragMode: 'move',
-                    autoCropArea: 0.9,
-                    responsive: true,
-                    restore: false,
-                    center: true,
-                    highlight: false,
-                    cropBoxMovable: true,
-                    cropBoxResizable: true,
-                    toggleDragModeOnDblclick: false,
-                    minContainerWidth: 300,
-                    minContainerHeight: 200,
-                });
-            },
+                    console.log(`🖌️ Opening editor - ID: ${imageId}`);
+                    this.imageToEditId = imageId;
+                    this.imageToEditUrl = imageUrl;
 
-            getAspectRatioValue(ratioString) {
-                if (!ratioString || ratioString === 'free') return NaN;
-                const parts = ratioString.split(':');
-                return parseFloat(parts[0]) / parseFloat(parts[1]);
-            },
+                    try {
+                        const response = await fetch(imageUrl);
+                        const blob = await response.blob();
+                        const file = new File([blob], imageUrl.split('/').pop(), { type: blob.type });
+                        this.fileToEdit = file;
 
-            resetarImagem() {
-                if (this.cropper) this.cropper.reset();
-            },
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            this.$refs.imageEditorCanvas.src = e.target.result;
+                            this.editorOpen = true;
+                            this.$nextTick(() => this.initCropper());
+                        };
+                        reader.readAsDataURL(file);
+                    } catch (error) {
+                        console.error('❌ Error loading image:', error);
+                        new FilamentNotification()
+                            .title(config.translations.save_error.title || 'Loading Error')
+                            .danger()
+                            .body('Unable to load image.')
+                            .send();
+                    }
+                },
 
-            rotacionar(degree) {
-                if (this.cropper) this.cropper.rotate(degree);
-            },
+                closeEditor() {
+                    console.log('🚪 Closing editor.');
+                    this.editorOpen = false;
+                    if (this.cropper) {
+                        this.cropper.destroy();
+                        this.cropper = null;
+                    }
+                    this.$refs.imageEditorCanvas.src = '';
+                    this.imageToEditId = null;
+                    this.imageToEditUrl = null;
+                    this.fileToEdit = null;
+                },
 
-            espelharHorizontal() {
-                if (this.cropper) this.cropper.scaleX(-this.cropper.getData().scaleX || -1);
-            },
-
-            espelharVertical() {
-                if (this.cropper) this.cropper.scaleY(-this.cropper.getData().scaleY || -1);
-            },
-
-            zoom(factor) {
-                if (this.cropper) this.cropper.zoom(factor);
-            },
-
-            mudarAspectRatio(ratioString) {
-                this.currentAspectRatio = ratioString;
-                if (this.cropper) this.cropper.setAspectRatio(this.getAspectRatioValue(ratioString));
-            },
-
-            salvarImagemEditada() {
-                console.log('💾 Salvando imagem editada...');
-                if (!this.cropper) return;
-
-                this.cropper.getCroppedCanvas().toBlob((blob) => {
-                    console.log('🖼️ Canvas convertido para Blob');
-                    const fileName = `${this.arquivoParaEditar.name.split('.').slice(0, -1).join('.')}_edited.png`;
-
-                    this.$wire.upload(config.statePath + '_edited_media', blob, () => {
-                        console.log('✅ Upload da imagem editada concluído');
-                        this.$wire.call('handleEditedMediaUpload', this.imagemParaEditarId, fileName, config.statePath)
-                            .then(() => {
-                                console.log('✨ Imagem atualizada com sucesso');
-                                this.fecharEditor();
-                                new FilamentNotification()
-                                    .title(config.translations.image_edited_success.title)
-                                    .success()
-                                    .body(config.translations.image_edited_success.body)
-                                    .send();
-                                this.$wire.$refresh();
-                            })
-                            .catch((error) => {
-                                console.error('❌ Erro ao salvar:', error);
-                                new FilamentNotification()
-                                    .title(config.translations.save_error.title)
-                                    .danger()
-                                    .body(config.translations.save_error.body)
-                                    .send();
-                            });
+                initCropper() {
+                    console.log('🔧 Initializing Cropper.js');
+                    if (this.cropper) {
+                        this.cropper.destroy();
+                    }
+                    this.cropper = new Cropper(this.$refs.imageEditorCanvas, {
+                        aspectRatio: this.getAspectRatioValue(this.currentAspectRatio),
+                        viewMode: 2,
+                        dragMode: 'move',
+                        autoCropArea: 0.9,
+                        responsive: true,
+                        restore: false,
+                        center: true,
+                        highlight: false,
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                        toggleDragModeOnDblclick: false,
+                        minContainerWidth: 300,
+                        minContainerHeight: 200,
                     });
-                }, 'image/png');
-            },
+                },
 
-            updateAltText(mediaId, altText) {
-                console.log(`✏️ Atualizando alt text - ID: ${mediaId}`, altText);
+                getAspectRatioValue(ratioString) {
+                    if (!ratioString || ratioString === 'free') return NaN;
+                    const parts = ratioString.split(':');
+                    return parseFloat(parts[0]) / parseFloat(parts[1]);
+                },
 
-                // Atualiza o alt text localmente
-                const media = this.mediasDisponiveis.find(m => m.id === mediaId);
-                if (media) {
-                    media.alt = altText;
-                    console.log('✅ Alt text atualizado localmente');
-                }
+                resetImage() {
+                    if (this.cropper) this.cropper.reset();
+                },
 
-                // Persiste no backend via Livewire
-                this.$wire.call('updateMediaAlt', mediaId, altText, config.statePath)
-                    .then(() => {
-                        console.log('✅ Alt text persistido no backend');
-                    })
-                    .catch((error) => {
-                        console.error('❌ Erro ao atualizar alt text:', error);
-                    });
-            },
-        }
+                rotate(degree) {
+                    if (this.cropper) this.cropper.rotate(degree);
+                },
+
+                flipHorizontal() {
+                    if (this.cropper) this.cropper.scaleX(-this.cropper.getData().scaleX || -1);
+                },
+
+                flipVertical() {
+                    if (this.cropper) this.cropper.scaleY(-this.cropper.getData().scaleY || -1);
+                },
+
+                zoom(factor) {
+                    if (this.cropper) this.cropper.zoom(factor);
+                },
+
+                changeAspectRatio(ratioString) {
+                    this.currentAspectRatio = ratioString;
+                    if (this.cropper) this.cropper.setAspectRatio(this.getAspectRatioValue(ratioString));
+                },
+
+                saveEditedImage() {
+                    console.log('💾 Saving edited image...');
+                    if (!this.cropper) return;
+
+                    this.cropper.getCroppedCanvas().toBlob((blob) => {
+                        console.log('🖼️ Canvas converted to Blob');
+                        const fileName = `${this.fileToEdit.name.split('.').slice(0, -1).join('.')}_edited.png`;
+
+                        this.$wire.upload(config.statePath + '_edited_media', blob, () => {
+                            console.log('✅ Edited image upload completed');
+                            this.$wire.call('handleEditedMediaUpload', this.imageToEditId, fileName, config.statePath)
+                                .then(() => {
+                                    console.log('✨ Image updated successfully');
+                                    this.closeEditor();
+                                    new FilamentNotification()
+                                        .title(config.translations.image_edited_success.title)
+                                        .success()
+                                        .body(config.translations.image_edited_success.body)
+                                        .send();
+                                    this.$wire.$refresh();
+                                })
+                                .catch((error) => {
+                                    console.error('❌ Save error:', error);
+                                    new FilamentNotification()
+                                        .title(config.translations.save_error.title)
+                                        .danger()
+                                        .body(config.translations.save_error.body)
+                                        .send();
+                                });
+                        });
+                    }, 'image/png');
+                },
+
+                updateAltText(mediaId, altText) {
+                    console.log(`✏️ Updating alt text - ID: ${mediaId}`, altText);
+
+                    // Update alt text locally
+                    const media = this.availableMedias.find(m => m.id === mediaId);
+                    if (media) {
+                        media.alt = altText;
+                        console.log('✅ Alt text updated locally');
+                    }
+
+                    // Persist in backend via Livewire
+                    this.$wire.call('updateMediaAlt', mediaId, altText, config.statePath)
+                        .then(() => {
+                            console.log('✅ Alt text persisted in backend');
+                        })
+                        .catch((error) => {
+                            console.error('❌ Error updating alt text:', error);
+                        });
+                },
+            };
+
     }
 </script>
