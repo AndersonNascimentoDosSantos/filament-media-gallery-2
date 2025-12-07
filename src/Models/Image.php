@@ -7,22 +7,24 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
-class Imagem extends Model
+class Image extends Model
 {
     use HasFactory;
     use SoftDeletes;
 
-    protected $table = 'imagens';
+    protected $table = 'images';
 
     protected $fillable = [
         'path',
-        'nome_original',
+        'original_name',
         'mime_type',
-        'tamanho',
+        'size',
+        'alt'
+
     ];
 
     protected $casts = [
-        'tamanho' => 'integer',
+        'size' => 'integer',
     ];
 
     protected $appends = ['url'];
@@ -37,11 +39,11 @@ class Imagem extends Model
     }
 
     /**
-     * Retorna o tamanho formatado.
+     * Retorna o size formatado.
      */
-    public function getTamanhoFormatadoAttribute(): string
+    public function getSizeFormattedAttribute(): string
     {
-        $bytes = $this->tamanho;
+        $bytes = $this->size;
 
         if ($bytes >= 1073741824) {
             return number_format($bytes / 1073741824, 2) . ' GB';
@@ -63,7 +65,7 @@ class Imagem extends Model
      */
     protected static function booted(): void
     {
-        static::deleting(function (Imagem $imagem) {
+        static::deleting(function (Image $imagem) {
             // Garante que o arquivo seja excluído apenas na exclusão forçada (forceDelete)
             if ($imagem->isForceDeleting()) {
                 $disk = config('filament-media-gallery.disk', 'public');

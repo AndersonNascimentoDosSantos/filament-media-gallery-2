@@ -6,7 +6,7 @@ use Devanderson\FilamentMediaGallery\Models\Imagem;
 use Devanderson\FilamentMediaGallery\Models\Video;
 use Filament\Forms\Components\Field;
 
-class GaleriaMidiaField extends Field
+class GalleryMidiaField extends Field
 {
     protected string $view = 'filament-media-gallery::components.galeria-midia-field';
 
@@ -114,45 +114,43 @@ class GaleriaMidiaField extends Field
     /**
      * Obtém as mídias disponíveis com paginação
      */
-    public function getMediasDisponiveis(): array
+    /**
+     * Get available medias (used in component initialization)
+     * THIS METHOD IS CALLED FROM THE BLADE VIEW
+     */
+    public function getAvailableMedias(): array
     {
-        $model = $this->getModelClass();
+        $modelClass = $this->getModelClass();
+        $mediaType = $this->getMediaType();
         $perPage = config('filament-media-gallery.gallery.per_page', 24);
 
-        \Log::info('GaleriaMidiaField: Carregando mídias disponíveis', [
-            'mediaType' => $this->getMediaType(),
-            'modelClass' => $model,
-            'perPage' => $perPage
-        ]);
+        $medias = $modelClass::orderBy('created_at', 'desc')
+            ->paginate($perPage);
 
-        // FILTRO CORRETO: busca apenas do modelo específico (Imagem OU Video)
-        $mediasPaginadas = $model::orderBy('created_at', 'desc')->paginate($perPage);
-
-        $medias = collect($mediasPaginadas->items())->map(function ($media) {
+        $mappedMedias = collect($medias->items())->map(function ($media) use ($mediaType) {
             $data = [
                 'id' => $media->id,
                 'url' => $media->url,
-                'nome_original' => $media->nome_original,
-                'is_video' => $this->getMediaType() === 'video',
+                'original_name' => $media->original_name,
+                'is_video' => $mediaType === 'video',
             ];
 
-            // Adiciona thumbnail_url para vídeos
-            if ($this->getMediaType() === 'video' && method_exists($media, 'getThumbnailUrlAttribute')) {
+            // Add thumbnail for videos
+            if ($mediaType === 'video' && method_exists($media, 'getThumbnailUrlAttribute')) {
                 $data['thumbnail_url'] = $media->thumbnail_url;
             }
 
-            return $data;
-        });
+            // Add alt for images
+            if ($mediaType === 'image' && isset($media->alt)) {
+                $data['alt'] = $media->alt;
+            }
 
-        \Log::info('GaleriaMidiaField: Mídias carregadas', [
-            'mediaType' => $this->getMediaType(),
-            'total' => $medias->count(),
-            'temMais' => $mediasPaginadas->hasMorePages()
-        ]);
+            return $data;
+        })->toArray();
 
         return [
-            'medias' => $medias->toArray(),
-            'temMais' => $mediasPaginadas->hasMorePages()
+            'medias' => $mappedMedias,
+            'hasMore' => $medias->hasMorePages(),
         ];
     }
 

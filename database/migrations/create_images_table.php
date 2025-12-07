@@ -8,12 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('imagens', function (Blueprint $table) {
+        Schema::create('images', function (Blueprint $table) {
             $table->id();
             $table->string('path');
-            $table->string('nome_original');
+            $table->string('original_name');
+            $table->string('alt')->nullable(); // Adiciona a coluna 'alt'
+
             $table->string('mime_type', 50);
-            $table->unsignedBigInteger('tamanho')->comment('Tamanho em bytes');
+            $table->unsignedBigInteger('size')->comment('size in bytes');
             $table->timestamps();
             $table->softDeletes();
 
@@ -25,6 +27,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('imagens');
+        Schema::dropIfExists('images');
     }
 };

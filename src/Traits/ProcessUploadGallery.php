@@ -191,9 +191,9 @@ trait ProcessUploadGallery
 
             $dataToCreate = [
                 'path' => $newPath,
-                'nome_original' => $tempFile->getClientOriginalName(),
+                'original_name' => $tempFile->getClientOriginalName(),
                 'mime_type' => $tempFile->getMimeType(),
-                'tamanho' => $tempFile->getSize(),
+                'size' => $tempFile->getSize(),
             ];
 
             // Add 'alt' field only for images
@@ -235,7 +235,7 @@ trait ProcessUploadGallery
             $mediaData = [
                 'id' => $media->id,
                 'url' => $media->url,
-                'nome_original' => $media->nome_original,
+                'original_name' => $media->original_name,
                 'is_video' => $mediaType === 'video',
             ];
 
@@ -323,8 +323,8 @@ trait ProcessUploadGallery
 
             $imagem->update([
                 'path' => $newPath,
-                'nome_original' => $fileName,
-                'tamanho' => $tempFile->getSize(),
+                'original_name' => $fileName,
+                'size' => $tempFile->getSize(),
                 'mime_type' => $tempFile->getMimeType(),
             ]);
 
@@ -393,7 +393,7 @@ trait ProcessUploadGallery
                 $data = [
                     'id' => $media->id,
                     'url' => $media->url,
-                    'nome_original' => $media->nome_original,
+                    'original_name' => $media->original_name,
                     'is_video' => $mediaType === 'video',
                 ];
 
@@ -484,7 +484,7 @@ trait ProcessUploadGallery
     /**
      * Gets available medias (used in component initialization)
      */
-    public function getAvailableMedias(): array
+    protected function getAvailableMedias(): array
     {
         $modelClass = $this->getModelClass();
         $mediaType = $this->getMediaType();
@@ -497,7 +497,7 @@ trait ProcessUploadGallery
             $data = [
                 'id' => $media->id,
                 'url' => $media->url,
-                'nome_original' => $media->nome_original,
+                'original_name' => $media->original_name,
                 'is_video' => $mediaType === 'video',
             ];
 
