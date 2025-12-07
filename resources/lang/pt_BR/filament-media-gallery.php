@@ -9,8 +9,12 @@ return [
         'image_gallery' => 'Galeria de Imagens',
         'video_gallery' => 'Videoteca',
         'image_editor' => 'Editor de Imagem',
+        'alt_texts' => 'Textos Alternativos (Alt Text)',
+        'alternative_text' => 'Texto Alternativo',
     ],
-
+    'placeholders' => [
+        'describe_image' => 'Descreva o conteúdo da imagem para acessibilidade...',
+    ],
     'buttons' => [
         'select_from_gallery' => 'Selecionar da Galeria',
         'select_from_videos' => 'Selecionar da Videoteca',

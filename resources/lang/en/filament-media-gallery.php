@@ -9,6 +9,11 @@ return [
         'image_gallery' => 'Image Gallery',
         'video_gallery' => 'Video Library',
         'image_editor' => 'Image Editor',
+        'alt_texts' => 'Alternative Texts (Alt Text)',
+        'alternative_text' => 'Alternative Text',
+    ],
+    'placeholders' => [
+        'describe_image' => 'Describe the image content for accessibility...',
     ],
 
     'buttons' => [
