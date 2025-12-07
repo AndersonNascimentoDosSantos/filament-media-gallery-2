@@ -6,7 +6,7 @@ use Devanderson\FilamentMediaGallery\Models\Image;
 use Devanderson\FilamentMediaGallery\Models\Video;
 use Filament\Forms\Components\Field;
 
-class GalleryMidiaField extends Field
+class GalleryMediaField extends Field
 {
     protected string $view = 'filament-media-gallery::components.galeria-midia-field';
 

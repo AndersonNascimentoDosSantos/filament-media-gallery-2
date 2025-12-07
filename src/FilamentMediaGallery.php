@@ -2,7 +2,7 @@
 
 namespace Devanderson\FilamentMediaGallery;
 use Illuminate\Support\Facades\Storage;
-use Devanderson\FilamentMediaGallery\Models\Imagem;
+use Devanderson\FilamentMediaGallery\Models\Image;
 use Devanderson\FilamentMediaGallery\Models\Video;
 
 class FilamentMediaGallery
@@ -13,12 +13,12 @@ class FilamentMediaGallery
     public function getStats(): array
     {
         return [
-            'total_imagens' => Imagem::count(),
+            'total_imagens' => Image::count(),
             'total_videos' => Video::count(),
-            'tamanho_total_imagens' => $this->formatBytes(Imagem::sum('tamanho')),
+            'tamanho_total_imagens' => $this->formatBytes(Image::sum('tamanho')),
             'tamanho_total_videos' => $this->formatBytes(Video::sum('tamanho')),
             'espaco_total_usado' => $this->formatBytes(
-                Imagem::sum('tamanho') + Video::sum('tamanho')
+                Image::sum('tamanho') + Video::sum('tamanho')
             ),
         ];
     }
@@ -29,7 +29,7 @@ class FilamentMediaGallery
     public function getImages(int $perPage = null): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         $perPage = $perPage ?? config('filament-media-gallery.gallery.per_page', 24);
-        return Imagem::orderBy('created_at', 'desc')->paginate($perPage);
+        return Image::orderBy('created_at', 'desc')->paginate($perPage);
     }
 
     /**
@@ -44,9 +44,9 @@ class FilamentMediaGallery
     /**
      * Obtém uma imagem por ID
      */
-    public function getImage(int $id): ?Imagem
+    public function getImage(int $id): ?Image
     {
-        return Imagem::find($id);
+        return Image::find($id);
     }
 
     /**
@@ -62,7 +62,7 @@ class FilamentMediaGallery
      */
     public function deleteImage(int $id): bool
     {
-        $imagem = Imagem::find($id);
+        $imagem = Image::find($id);
 
         if (!$imagem) {
             return false;
@@ -94,7 +94,7 @@ class FilamentMediaGallery
         $path = config('filament-media-gallery.path', 'galeria');
 
         $files = Storage::disk($disk)->files($path);
-        $registeredPaths = Imagem::pluck('path')->toArray();
+        $registeredPaths = Image::pluck('path')->toArray();
 
         $orphans = array_diff($files, $registeredPaths);
         $deleted = [];
@@ -154,7 +154,7 @@ class FilamentMediaGallery
         $results = [];
 
         if (in_array($type, ['image', 'both'])) {
-            $results['images'] = Imagem::where('nome_original', 'like', "%{$query}%")
+            $results['images'] = Image::where('nome_original', 'like', "%{$query}%")
                 ->orderBy('created_at', 'desc')
                 ->get();
         }
@@ -176,7 +176,7 @@ class FilamentMediaGallery
         $results = [];
 
         if (in_array($type, ['image', 'both'])) {
-            $results['images'] = Imagem::orderBy('created_at', 'desc')
+            $results['images'] = Image::orderBy('created_at', 'desc')
                 ->limit($limit)
                 ->get();
         }
@@ -198,7 +198,7 @@ class FilamentMediaGallery
         $results = [];
 
         if (in_array($type, ['image', 'both'])) {
-            $results['images'] = Imagem::orderBy('tamanho', 'desc')
+            $results['images'] = Image::orderBy('tamanho', 'desc')
                 ->limit($limit)
                 ->get();
         }

@@ -2,7 +2,7 @@
 
 namespace Devanderson\FilamentMediaGallery;
 
-use Devanderson\FilamentMediaGallery\Forms\Components\GalleryMidiaField;
+use Devanderson\FilamentMediaGallery\Forms\Components\GalleryMediaField;
 use Filament\Support\Assets\Css;
 use Filament\Support\Assets\Js;
 use Filament\Support\Facades\FilamentAsset;
@@ -57,8 +57,8 @@ class FilamentMediaGalleryServiceProvider extends PackageServiceProvider
 
         // Registra o componente de formulário
         if (class_exists(\Filament\Forms\Components\Field::class)) {
-            \Filament\Forms\Components\Field::macro('galeriaMidia', function () {
-                return new GalleryMidiaField($this->getName());
+            \Filament\Forms\Components\Field::macro('galleryMedia', function () {
+                return new GalleryMediaField($this->getName());
             });
         }
     }
