@@ -484,7 +484,7 @@ trait ProcessUploadGallery
     /**
      * Gets available medias (used in component initialization)
      */
-    protected function getAvailableMedias(): array
+    public function getAvailableMedias(): array
     {
         $modelClass = $this->getModelClass();
         $mediaType = $this->getMediaType();
