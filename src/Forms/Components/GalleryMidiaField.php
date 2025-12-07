@@ -2,7 +2,7 @@
 
 namespace Devanderson\FilamentMediaGallery\Forms\Components;
 
-use Devanderson\FilamentMediaGallery\Models\Imagem;
+use Devanderson\FilamentMediaGallery\Models\Image;
 use Devanderson\FilamentMediaGallery\Models\Video;
 use Filament\Forms\Components\Field;
 
@@ -11,7 +11,7 @@ class GalleryMidiaField extends Field
     protected string $view = 'filament-media-gallery::components.galeria-midia-field';
 
     protected string $mediaType = 'image'; // 'image' ou 'video'
-    protected string $modelClass = Imagem::class;
+    protected string $modelClass = Image::class;
     protected bool $allowUpload = true;
     protected bool $allowMultiple = true;
     protected ?int $maxItems = null;
@@ -51,7 +51,7 @@ class GalleryMidiaField extends Field
         // Define o model correto baseado no tipo e config
         $this->modelClass = ($type === 'video')
             ? config('filament-media-gallery.video.model', Video::class)
-            : config('filament-media-gallery.image.model', Imagem::class);
+            : config('filament-media-gallery.image.model', Image::class);
 
         // Auto-configura editor de imagem apenas para tipo 'image'
         if ($type === 'image') {

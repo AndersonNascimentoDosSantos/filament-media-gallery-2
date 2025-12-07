@@ -3,7 +3,7 @@
 namespace Devanderson\FilamentMediaGallery\Traits;
 
 use Devanderson\FilamentMediaGallery\Models\Video;
-use Devanderson\FilamentMediaGallery\Models\Imagem;
+use Devanderson\FilamentMediaGallery\Models\Image;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -87,7 +87,7 @@ trait ProcessUploadGallery
         $isVideoField = str_contains(strtolower($fieldName), 'video');
 
         // Use models from config
-        $imageModel = config('filament-media-gallery.image.model', Imagem::class);
+        $imageModel = config('filament-media-gallery.image.model', Image::class);
         $videoModel = config('filament-media-gallery.video.model', Video::class);
 
         $config = [
@@ -305,23 +305,23 @@ trait ProcessUploadGallery
             }
 
             // Use model from config
-            $imageModel = config('filament-media-gallery.image.model', Imagem::class);
-            $imagem = $imageModel::find($mediaId);
+            $imageModel = config('filament-media-gallery.image.model', Image::class);
+            $image = $imageModel::find($mediaId);
 
-            if (!$imagem) {
+            if (!$image) {
                 throw new \Exception('Original image not found.');
             }
 
             $disk = config('filament-media-gallery.disk', 'public');
 
-            if (Storage::disk($disk)->exists($imagem->path)) {
-                Storage::disk($disk)->delete($imagem->path);
+            if (Storage::disk($disk)->exists($image->path)) {
+                Storage::disk($disk)->delete($image->path);
             }
 
             $path = config('filament-media-gallery.path', 'galeria');
             $newPath = $tempFile->store($path, $disk);
 
-            $imagem->update([
+            $image->update([
                 'path' => $newPath,
                 'original_name' => $fileName,
                 'size' => $tempFile->getSize(),
@@ -337,7 +337,7 @@ trait ProcessUploadGallery
                 ->send();
 
             \Log::info('ProcessaUploadGaleria: Image edited successfully', [
-                'imagem_id' => $imagem->id
+                'image_id' => $image->id
             ]);
 
         } catch (\Exception $e) {
@@ -458,18 +458,18 @@ trait ProcessUploadGallery
                 return;
             }
 
-            $imagem = $modelClass::find($mediaId);
+            $image = $modelClass::find($mediaId);
 
-            if (!$imagem) {
+            if (!$image) {
                 throw new \Exception('Image not found.');
             }
 
-            $imagem->update([
+            $image->update([
                 'alt' => $altText
             ]);
 
             \Log::info('ProcessaUploadGaleria: Alt text updated successfully', [
-                'imagem_id' => $imagem->id,
+                'image_id' => $image->id,
                 'alt' => $altText
             ]);
 

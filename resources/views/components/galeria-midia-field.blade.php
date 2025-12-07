@@ -1089,6 +1089,141 @@
     .cursor-not-allowed input {
         cursor: not-allowed;
     }
+    /* Seção de Alt Text - Área Separada */
+    .g-alt-section {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        background-color: rgb(249, 250, 251);
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .dark .g-alt-section {
+        background-color: rgb(31, 41, 55);
+    }
+
+    .g-alt-section-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: rgb(55, 65, 81);
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid rgb(229, 231, 235);
+        padding-bottom: 0.5rem;
+    }
+
+    .dark .g-alt-section-title {
+        color: rgb(209, 213, 219);
+        border-bottom-color: rgb(75, 85, 99);
+    }
+
+    .g-alt-item {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        padding: 1rem;
+        background-color: white;
+        border-radius: 0.5rem;
+        border: 1px solid rgb(229, 231, 235);
+        transition: all 0.2s;
+    }
+
+    .dark .g-alt-item {
+        background-color: rgb(55, 65, 81);
+        border-color: rgb(75, 85, 99);
+    }
+
+    .g-alt-item:hover {
+        border-color: rgb(59, 130, 246);
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+    }
+
+    .g-alt-item-thumbnail {
+        width: 80px;
+        height: 80px;
+        border-radius: 0.375rem;
+        overflow: hidden;
+        flex-shrink: 0;
+        border: 2px solid rgb(229, 231, 235);
+    }
+
+    .dark .g-alt-item-thumbnail {
+        border-color: rgb(75, 85, 99);
+    }
+
+    .g-alt-item-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .g-alt-item-content {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .g-alt-item-name {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: rgb(17, 24, 39);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dark .g-alt-item-name {
+        color: rgb(229, 231, 235);
+    }
+
+    .g-alt-input-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .g-alt-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: rgb(75, 85, 99);
+    }
+
+    .dark .g-alt-label {
+        color: rgb(156, 163, 175);
+    }
+
+    .g-alt-input {
+        width: 100%;
+        padding: 0.625rem;
+        font-size: 0.875rem;
+        border: 1px solid rgb(209, 213, 219);
+        border-radius: 0.375rem;
+        background-color: white;
+        color: rgb(17, 24, 39);
+        transition: all 0.2s;
+    }
+
+    .g-alt-input:focus {
+        outline: none;
+        border-color: rgb(59, 130, 246);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .dark .g-alt-input {
+        background-color: rgb(31, 41, 55);
+        border-color: rgb(75, 85, 99);
+        color: white;
+    }
+
+    .dark .g-alt-input:focus {
+        border-color: rgb(96, 165, 250);
+        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+    }
 </style>
 
 <script>
