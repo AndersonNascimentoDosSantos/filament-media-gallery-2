@@ -33,6 +33,11 @@ class TestCase extends Orchestra
         Factory::guessFactoryNamesUsing(
             fn (string $modelName) => 'Devanderson\\FilamentMediaGallery\\Database\\Factories\\' . class_basename($modelName) . 'Factory'
         );
+
+               Factory::guessFactoryNamesUsing(
+            fn (string $modelName) => 'AndersonNascimentoDosSantos\\FilamentMediaGallery\\Tests\\Database\\Factories\\' . class_basename($modelName) . 'Factory'
+        );
+
     }
 
     protected function getPackageProviders($app)
@@ -63,11 +68,29 @@ class TestCase extends Orchestra
     {
         $app['config']->set('database.default', 'testing');
         $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
+        config()->set('database.default', 'testing');
+
+        // Registra painéis Filament para testes
+        config()->set('filament-panels', [
+            'default' => 'admin',
+            'panels' => [
+                'admin' => [
+                    'path' => 'admin',
+                    'id' => 'admin',
+                ],
+            ],
+        ]);
     }
 
     protected function defineDatabaseMigrations(): void
     {
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
         $this->artisan('migrate', ['--database' => 'testing'])->run();
+    }
+
+    protected function defineDatabaseMigrationsAfterDatabaseRefresh(): void
+    {
+        $this->loadLaravelMigrations(['database/migrations']);
+        $this->loadMigrationsFrom(__DIR__ . '/Database/migrations');
     }
 }
