@@ -6,7 +6,7 @@ use Devanderson\FilamentMediaGallery\Forms\Components\GalleryMediaField;
 use Devanderson\FilamentMediaGallery\Traits\ProcessUploadGallery;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Schemas\Components\Form;
+use Filament\Schemas\Schema;
 use Livewire\Component;
 
 class TestFormComponent extends Component implements HasForms
@@ -19,10 +19,9 @@ class TestFormComponent extends Component implements HasForms
         'my_gallery_new_media' => null,
     ];
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema->components([
                 GalleryMediaField::make('my_gallery')
                     ->mediaType('image')
                     ->allowMultiple(true),
