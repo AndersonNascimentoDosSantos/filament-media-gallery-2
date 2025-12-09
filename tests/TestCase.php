@@ -62,19 +62,11 @@ class TestCase extends Orchestra
     public function getEnvironmentSetUp($app): void
     {
         $app['config']->set('database.default', 'testing');
-        $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
-        config()->set('database.default', 'testing');
+        $app['config']->set('app.key', 'base64:' . base64_encode(random_bytes(32)));
 
-        // Registra painéis Filament para testes
-        config()->set('filament-panels', [
-            'default' => 'admin',
-            'panels' => [
-                'admin' => [
-                    'path' => 'admin',
-                    'id' => 'admin',
-                ],
-            ],
-        ]);
+        // Corrigido: Usar a instância do app para definir a configuração do painel
+        $app['config']->set('filament.panels.default.id', 'admin');
+        $app['config']->set('filament.panels.default.path', '/admin');
     }
 
     protected function defineDatabaseMigrations(): void

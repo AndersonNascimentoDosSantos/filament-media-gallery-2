@@ -4,44 +4,15 @@ namespace Devanderson\FilamentMediaGallery\Tests\Feature;
 
 use Devanderson\FilamentMediaGallery\Forms\Components\GalleryMediaField;
 use Devanderson\FilamentMediaGallery\Models\Image;
-use Devanderson\FilamentMediaGallery\Traits\ProcessUploadGallery;
-use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Form;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Livewire\Component;
 use Livewire\Livewire;
+use Devanderson\FilamentMediaGallery\Tests\TestFormComponent;
+
 
 use function Pest\Livewire\livewire;
-
-class GalleryMediaFieldTest extends Component implements HasForms
-{
-    use InteractsWithForms;
-    use ProcessUploadGallery;
-
-    public $data = [
-        'my_gallery' => null,
-        'my_gallery_new_media' => null,
-    ];
-
-    public function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                GalleryMediaField::make('my_gallery')
-                    ->mediaType('image')
-                    ->allowMultiple(true),
-            ])
-            ->statePath('data');
-    }
-
-    public function render()
-    {
-        return '<div></div>';
-    }
-}
 
 beforeEach(function () {
     Storage::fake('public');
@@ -49,14 +20,14 @@ beforeEach(function () {
 });
 
 it('can render the gallery field', function () {
-    livewire(GalleryMediaFieldTest::class)
+    livewire(TestFormComponent::class)
         ->assertFormFieldExists('my_gallery');
 });
 
 it('can upload a new image', function () {
     $file = UploadedFile::fake()->image('avatar.jpg');
 
-    livewire(GalleryMediaFieldTest::class)
+    livewire(TestFormComponent::class)
         ->set('data.my_gallery_new_media', $file)
         ->call('handleNewMediaUpload', $file->getFilename(), 'data.my_gallery')
         ->assertHasNoErrors()
@@ -76,7 +47,7 @@ it('can upload a new image', function () {
 it('can select an existing image', function () {
     $image = Image::factory()->create();
 
-    livewire(GalleryMediaFieldTest::class)
+    livewire(TestFormComponent::class)
         ->set('data.my_gallery', [$image->id])
         ->assertSet('data.my_gallery', [$image->id]);
 });
@@ -84,7 +55,7 @@ it('can select an existing image', function () {
 it('can load more media', function () {
     Image::factory()->count(30)->create();
 
-    Livewire::test(GalleryMediaFieldTest::class)
+    Livewire::test(TestFormComponent::class)
         ->call('loadMoreMedias', 2, 'data.my_gallery')
         ->assertReturned(function (array $response) {
             return count($response['medias']) === 6 && $response['hasMore'] === true;
@@ -94,7 +65,7 @@ it('can load more media', function () {
 it('can update media alt text', function () {
     $image = Image::factory()->create(['alt' => 'Old Alt']);
 
-    livewire(GalleryMediaFieldTest::class)
+    livewire(TestFormComponent::class)
         ->call('updateMediaAlt', $image->id, 'New Alt Text', 'data.my_gallery');
 
     $image->refresh();

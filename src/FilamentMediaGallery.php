@@ -124,7 +124,15 @@ class FilamentMediaGallery
         $galleryPath = config('filament-media-gallery.path', 'galeria');
         $thumbnailPath = 'thumbnails';
 
-        $files = array_merge(Storage::disk($disk)->files($galleryPath), Storage::disk($disk)->files($thumbnailPath));
+        $galleryFiles = Storage::disk($disk)->files($galleryPath);
+        $allowedVideoExtensions = config('filament-media-gallery.video.allowed_extensions', ['mp4', 'webm', 'ogg']);
+
+        // Filtra apenas arquivos que parecem ser vídeos no diretório principal
+        $videoFiles = array_filter($galleryFiles, function ($file) use ($allowedVideoExtensions) {
+            return in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), $allowedVideoExtensions);
+        });
+
+        $files = array_merge($videoFiles, Storage::disk($disk)->files($thumbnailPath));
         $registeredPaths = Video::pluck('path')->toArray();
         $registeredThumbnails = Video::whereNotNull('thumbnail_path')
             ->pluck('thumbnail_path')
