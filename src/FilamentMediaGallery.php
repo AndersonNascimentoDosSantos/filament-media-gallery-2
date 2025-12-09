@@ -15,10 +15,10 @@ class FilamentMediaGallery
         return [
             'total_imagens' => Image::count(),
             'total_videos' => Video::count(),
-            'tamanho_total_imagens' => $this->formatBytes(Image::sum('tamanho')),
+            'tamanho_total_imagens' => $this->formatBytes(Image::sum('size')),
             'tamanho_total_videos' => $this->formatBytes(Video::sum('tamanho')),
             'espaco_total_usado' => $this->formatBytes(
-                Image::sum('tamanho') + Video::sum('tamanho')
+                Image::sum('size') + Video::sum('tamanho')
             ),
         ];
     }
@@ -114,14 +114,14 @@ class FilamentMediaGallery
     public function cleanOrphanVideos(): array
     {
         $disk = config('filament-media-gallery.disk', 'public');
-        $path = config('filament-media-gallery.path', 'galeria');
+        $galleryPath = config('filament-media-gallery.path', 'galeria');
+        $thumbnailPath = 'thumbnails';
 
-        $files = Storage::disk($disk)->files($path);
+        $files = array_merge(Storage::disk($disk)->files($galleryPath), Storage::disk($disk)->files($thumbnailPath));
         $registeredPaths = Video::pluck('path')->toArray();
         $registeredThumbnails = Video::whereNotNull('thumbnail_path')
             ->pluck('thumbnail_path')
             ->toArray();
-
         $registered = array_merge($registeredPaths, $registeredThumbnails);
         $orphans = array_diff($files, $registered);
         $deleted = [];
@@ -198,7 +198,7 @@ class FilamentMediaGallery
         $results = [];
 
         if (in_array($type, ['image', 'both'])) {
-            $results['images'] = Image::orderBy('tamanho', 'desc')
+            $results['images'] = Image::orderBy('size', 'desc')
                 ->limit($limit)
                 ->get();
         }

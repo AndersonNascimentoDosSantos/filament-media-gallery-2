@@ -106,7 +106,7 @@ it('handles single media upload limit', function () {
     $image = Image::factory()->create();
 
     // Custom component for single upload
-    $livewire = livewire(new class extends GalleryMediaFieldTest {
+    $livewire = Livewire::test(new class extends TestFormComponent {
         public function form(\Filament\Schemas\Components\Form $form): Form
         {
             return $form
