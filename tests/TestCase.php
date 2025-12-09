@@ -33,11 +33,6 @@ class TestCase extends Orchestra
         Factory::guessFactoryNamesUsing(
             fn (string $modelName) => 'Devanderson\\FilamentMediaGallery\\Database\\Factories\\' . class_basename($modelName) . 'Factory'
         );
-
-               Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'AndersonNascimentoDosSantos\\FilamentMediaGallery\\Tests\\Database\\Factories\\' . class_basename($modelName) . 'Factory'
-        );
-
     }
 
     protected function getPackageProviders($app)
