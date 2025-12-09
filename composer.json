@@ -45,6 +45,33 @@
         "pestphp/pest-plugin-laravel": "^3.0",
         "pestphp/pest-plugin-livewire": "^3.0"
     },
+
+    "scripts": {
+        "post-autoload-dump": "@php ./vendor/bin/testbench package:discover --ansi",
+        "test": "pest",
+        "test:lint": "pint --test",
+        "test:filter": "pest --filter",
+        "test:group": "pest --group",
+        "test:coverage": "pest --coverage --min=80",
+        "test:watch": "pest --watch",
+        "test:parallel": "pest --parallel",
+        "test:profile": "pest --profile",
+        "lint": "phpcs --standard=PSR12 src tests",
+        "lint:fix": "phpcbf --standard=PSR12 src tests"
+    },
+    "scripts-descriptions": {
+        "test": "Roda todos os testes",
+        "test:filter": "Filtra testes por nome",
+        "test:group": "Roda grupo de testes",
+        "test:coverage": "Gera relatório de cobertura",
+        "test:watch": "Roda testes em modo watch",
+        "test:parallel": "Roda testes em paralelo",
+        "test:profile": "Mostra testes mais lentos",
+        "lint": "Verifica code style",
+        "lint:fix": "Corrige code style automaticamente"
+    },
+
+
     "autoload": {
         "psr-4": {
             "Devanderson\\FilamentMediaGallery\\": "src/",
@@ -56,12 +83,7 @@
             "Devanderson\\FilamentMediaGallery\\Tests\\": "tests/"
         }
     },
-    "scripts": {
-        "post-autoload-dump": "@php ./vendor/bin/testbench package:discover --ansi",
-        "lint": "pint",
-        "test": "pest",
-        "test:lint": "pint --test"
-    },
+
     "extra": {
         "laravel": {
             "providers": [

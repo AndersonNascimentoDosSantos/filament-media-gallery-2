@@ -15,14 +15,15 @@ class TestFormComponent extends Component implements HasForms
     use ProcessUploadGallery;
 
     public ?array $data = [
-        'my_gallery' => null,
-        'my_gallery_new_media' => null,
+        'images_ids' => null,
+        'images_ids_new_media' => null,
     ];
 
     public function form(Schema $schema): Schema
     {
-        return $schema->components([
-                GalleryMediaField::make('my_gallery')
+        return $schema
+            ->components([
+                GalleryMediaField::make('images_ids')
                     ->mediaType('image')
                     ->allowMultiple(true),
             ])
