@@ -93,7 +93,14 @@ class FilamentMediaGallery
         $disk = config('filament-media-gallery.disk', 'public');
         $path = config('filament-media-gallery.path', 'galeria');
 
-        $files = Storage::disk($disk)->files($path);
+        $allFiles = Storage::disk($disk)->files($path);
+        $allowedExtensions = config('filament-media-gallery.image.allowed_extensions', ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+
+        // Filtra apenas arquivos que parecem ser imagens
+        $files = array_filter($allFiles, function ($file) use ($allowedExtensions) {
+            return in_array(pathinfo($file, PATHINFO_EXTENSION), $allowedExtensions);
+        });
+
         $registeredPaths = Image::pluck('path')->toArray();
 
         $orphans = array_diff($files, $registeredPaths);
