@@ -6,6 +6,7 @@ use Devanderson\FilamentMediaGallery\Forms\Components\GalleryMediaField;
 use Devanderson\FilamentMediaGallery\Models\Image;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Form;
+use Filament\Schemas\Schema;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -78,10 +79,10 @@ it('handles single media upload limit', function () {
 
     // Custom component for single upload
     $livewire = Livewire::test(new class extends TestFormComponent {
-        public function form(\Filament\Schemas\Components\Form $form): Form
+        public function form(Schema $schema): Schema
         {
-            return $form
-                ->schema([
+            return $schema
+                ->components([
                     GalleryMediaField::make('my_gallery')
                         ->mediaType('image')
                         ->allowMultiple(false),
