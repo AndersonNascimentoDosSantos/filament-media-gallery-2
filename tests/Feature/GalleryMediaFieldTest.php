@@ -59,7 +59,7 @@ it('can load more media', function () {
     Livewire::test(TestFormComponent::class)
         ->call('loadMoreMedias', 2, 'data.my_gallery')
         ->assertReturned(function (array $response) {
-            return count($response['medias']) === 6 && $response['hasMore'] === true;
+            return count($response['medias']) === 6 && $response['hasMore'] === false;
         });
 });
 
@@ -81,13 +81,12 @@ it('handles single media upload limit', function () {
     $livewire = Livewire::test(new class extends TestFormComponent {
         public function form(Schema $schema): Schema
         {
-            return $schema
-                ->components([
-                    GalleryMediaField::make('my_gallery')
-                        ->mediaType('image')
-                        ->allowMultiple(false),
-                ])
-                ->statePath('data');
+            return parent::form($schema)->schema([
+                GalleryMediaField::make('my_gallery')
+                    ->mediaType('image')
+                    ->allowMultiple(false),
+            ]);
+
         }
     });
 

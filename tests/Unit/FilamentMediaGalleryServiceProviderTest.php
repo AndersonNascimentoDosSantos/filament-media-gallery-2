@@ -9,3 +9,4 @@ it('registers forms components', function () {
 
     expect(config('filament.forms.components'))->not->toBeEmpty();
 })->group('service-provider');
+
