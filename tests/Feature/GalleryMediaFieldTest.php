@@ -81,7 +81,8 @@ it('handles single media upload limit', function () {
     $livewire = Livewire::test(new class extends TestFormComponent {
         public function form(Schema $schema): Schema
         {
-            return parent::form($schema)->schema([
+            return parent::form($schema)
+                ->schema->components([
                 GalleryMediaField::make('my_gallery')
                     ->mediaType('image')
                     ->allowMultiple(false),
