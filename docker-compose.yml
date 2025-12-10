@@ -1,0 +1,123 @@
+services:
+  # PHP 8.4 com Laravel 12
+  php84-laravel12:
+    build:
+      dockerfile: ./Docker/Dockerfile
+      args:
+        PHP_VERSION: "8.4"
+    container_name: fmg-php84-laravel12
+    volumes:
+      - .:/app
+      - composer-cache-84:/root/.composer
+    environment:
+      - LARAVEL_VERSION=12.*
+      - TESTBENCH_VERSION=10.*
+      - CARBON_VERSION=3.*
+      - COLLISION_VERSION=8.*
+    working_dir: /app
+    user: "${UID:-1000}:${GID:-1000}"
+    command: >
+      sh -c "
+      composer require laravel/framework:12.* orchestra/testbench:10.* nesbot/carbon:3.* nunomaduro/collision:8.* --no-interaction --no-update --dev &&
+      composer update --prefer-stable --prefer-dist --no-interaction &&
+      vendor/bin/pest
+      "
+
+  # PHP 8.3 com Laravel 12
+  php83-laravel12:
+    build:
+      dockerfile: ./Docker/Dockerfile
+      args:
+        PHP_VERSION: "8.3"
+        USER_ID: ${UID:-1000}
+        GROUP_ID: ${GID:-1000}
+    container_name: fmg-php83-laravel12
+    volumes:
+      - .:/app
+      - composer-cache-83:/root/.composer
+    environment:
+      - LARAVEL_VERSION=12.*
+      - TESTBENCH_VERSION=10.*
+      - CARBON_VERSION=3.*
+      - COLLISION_VERSION=8.*
+    working_dir: /app
+    command: >
+      sh -c "
+      composer require laravel/framework:12.* orchestra/testbench:10.* nesbot/carbon:3.* nunomaduro/collision:8.* --no-interaction --no-update --dev &&
+      composer update --prefer-stable --prefer-dist --no-interaction &&
+      vendor/bin/pest
+      "
+
+  # PHP 8.3 com Laravel 11
+  php83-laravel11:
+    build:
+      dockerfile: ./Docker/Dockerfile
+      args:
+        PHP_VERSION: "8.3"
+        USER_ID: ${UID:-1000}
+        GROUP_ID: ${GID:-1000}
+    container_name: fmg-php83-laravel11
+    volumes:
+      - .:/app
+      - composer-cache-83-l11:/root/.composer
+    environment:
+      - LARAVEL_VERSION=11.*
+      - TESTBENCH_VERSION=9.*
+      - CARBON_VERSION=3.*
+      - COLLISION_VERSION=8.*
+    working_dir: /app
+    command: >
+      sh -c "
+      composer require laravel/framework:11.* orchestra/testbench:9.* nesbot/carbon:3.* nunomaduro/collision:8.* --no-interaction --no-update --dev &&
+      composer update --prefer-stable --prefer-dist --no-interaction &&
+      vendor/bin/pest
+      "
+
+  # PHP 8.2 com Laravel 11
+  php82-laravel11:
+    build:
+      dockerfile: ./Docker/Dockerfile
+      args:
+        PHP_VERSION: "8.2"
+        USER_ID: ${UID:-1000}
+        GROUP_ID: ${GID:-1000}
+    container_name: fmg-php82-laravel11
+    volumes:
+      - .:/app
+      - composer-cache-82:/root/.composer
+    environment:
+      - LARAVEL_VERSION=11.*
+      - TESTBENCH_VERSION=9.*
+      - CARBON_VERSION=3.*
+      - COLLISION_VERSION=8.*
+    working_dir: /app
+    command: >
+      sh -c "
+      composer require laravel/framework:11.* orchestra/testbench:9.* nesbot/carbon:3.* nunomaduro/collision:8.* --no-interaction --no-update --dev &&
+      composer update --prefer-stable --prefer-dist --no-interaction &&
+      vendor/bin/pest
+      "
+
+  # Serviço para rodar comandos sem executar testes automaticamente
+  php-cli:
+    build:
+      dockerfile: ./Docker/Dockerfile
+      args:
+        PHP_VERSION: "8.3"
+        USER_ID: ${UID:-1000}
+        GROUP_ID: ${GID:-1000}
+    container_name: fmg-php-cli
+    volumes:
+      - .:/app
+      - composer-cache-cli:/root/.composer
+    working_dir: /app
+    command: bash
+    stdin_open: true
+    tty: true
+
+volumes:
+  composer-cache-84:
+  composer-cache-83:
+  composer-cache-83-l11:
+  composer-cache-82:
+  composer-cache-cli:

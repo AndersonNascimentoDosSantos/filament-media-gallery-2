@@ -62,10 +62,22 @@ class TestCase extends Orchestra
     public function getEnvironmentSetUp($app): void
     {
         $app['config']->set('database.default', 'testing');
+        $app['config']->set('app.key', 'base64:' . base64_encode(random_bytes(32)));
+
+        // Corrigido: Usar a instância do app para definir a configuração do painel
+        $app['config']->set('filament.panels.default.id', 'admin');
+        $app['config']->set('filament.panels.default.path', '/admin');
     }
 
     protected function defineDatabaseMigrations(): void
     {
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        $this->artisan('migrate', ['--database' => 'testing'])->run();
+    }
+
+    protected function defineDatabaseMigrationsAfterDatabaseRefresh(): void
+    {
+        $this->loadLaravelMigrations(['database/migrations']);
+        $this->loadMigrationsFrom(__DIR__ . '/Database/migrations');
     }
 }

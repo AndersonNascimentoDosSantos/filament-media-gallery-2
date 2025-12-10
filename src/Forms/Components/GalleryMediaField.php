@@ -8,12 +8,14 @@ use Filament\Forms\Components\Field;
 
 class GalleryMediaField extends Field
 {
-    protected string $view = 'filament-media-gallery::components.galeria-midia-field';
+//    private static ?string $defaultName ="images_ids";
+    protected string $view = 'filament-media-gallery::components.gallery-media-field';
 
     protected string $mediaType = 'image'; // 'image' ou 'video'
     protected string $modelClass = Image::class;
     protected bool $allowUpload = true;
     protected bool $allowMultiple = true;
+
     protected ?int $maxItems = null;
     protected string $directory = 'uploads';
     protected string $disk = 'public';
@@ -23,9 +25,9 @@ class GalleryMediaField extends Field
     /**
      * Cria uma nova instância do campo com configurações padrão
      */
-    public static function make(string $name = null): static
+    public static function make(string $name = null ): static
     {
-        $static = parent::make($name);
+        $static = app(static::class, ['name' => $name ]);
 
         // Carrega configurações padrão do config
         $config = config('filament-media-gallery.gallery', []);
@@ -151,6 +153,21 @@ class GalleryMediaField extends Field
         return [
             'medias' => $mappedMedias,
             'hasMore' => $medias->hasMorePages(),
+        ];
+    }
+
+    /**
+     * Returns the field's configuration as an array.
+     * Useful for passing config from frontend to backend actions.
+     */
+    public function getComponentConfig(): array
+    {
+        return [
+            'mediaType' => $this->getMediaType(),
+            'modelClass' => $this->getModelClass(),
+            'allowMultiple' => $this->getAllowMultiple(),
+            'allowUpload' => $this->getAllowUpload(),
+            'maxItems' => $this->getMaxItems(),
         ];
     }
 

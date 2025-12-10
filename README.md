@@ -51,17 +51,17 @@ php artisan vendor:publish --tag="filament-media-gallery-config"
 
 ### Understanding the Component
 
-The `GalleryMidiaField` is a custom Filament form component designed to browse and select one or more media items (images or videos) from a pre-existing gallery. It stores the IDs of the selected media, which are then used to create a many-to-many relationship between your primary model and the media models (`Image`, `Video`) provided by the gallery package.
+The `GalleryMediaField` is a custom Filament form component designed to browse and select one or more media items (images or videos) from a pre-existing gallery. It stores the IDs of the selected media, which are then used to create a many-to-many relationship between your primary model and the media models (`Image`, `Video`) provided by the gallery package.
 
 ### Step 1: Add the Component to Your Form
 
-Add `GalleryMidiaField` to your Filament form schema. You must specify the `mediaType` and a name for the field that will hold the selected IDs.
+Add `GalleryMediaField` to your Filament form schema. You must specify the `mediaType` and a name for the field that will hold the selected IDs.
 
 ```php
-use Devanderson\FilamentMediaGallery\Forms\Components\GalleryMidiaField;
+use Devanderson\FilamentMediaGallery\Forms\Components\GalleryMediaField;
 
 // In your Form schema
-GalleryMidiaField::make('videos_ids')
+GalleryMediaField::make('videos_ids')
     ->mediaType('video')
     ->allowMultiple()
     ->columnSpanFull()
@@ -250,7 +250,7 @@ namespace App\Filament\Resources\ProjectImageResource;
 
 use Filament\Forms;
 use Filament\Forms\Form;
-use Devanderson\FilamentMediaGallery\Forms\Components\GalleryMidiaField;
+use Devanderson\FilamentMediaGallery\Forms\Components\GalleryMediaField;
 
 class ProjectImageForm
 {
@@ -267,14 +267,14 @@ class ProjectImageForm
                     ->columnSpanFull(),
 
                 // Gallery field for images
-                GalleryMidiaField::make('images_ids')
+                GalleryMediaField::make('images_ids')
                     ->label('Gallery Images')
                     ->mediaType('image')
                     ->allowMultiple()
                     ->columnSpanFull(),
 
                 // Gallery field for videos
-                GalleryMidiaField::make('videos_ids')
+                GalleryMediaField::make('videos_ids')
                     ->label('Gallery Videos')
                     ->mediaType('video')
                     ->allowMultiple()
@@ -289,7 +289,7 @@ class ProjectImageForm
 ### Single Image Selection (Avatar, Cover, etc)
 
 ```php
-GalleryMidiaField::make('avatar_id')
+GalleryMediaField::make('avatar_id')
     ->label('Profile Picture')
     ->mediaType('image')
     ->allowMultiple(false)
@@ -299,7 +299,7 @@ GalleryMidiaField::make('avatar_id')
 ### Limited Selection with Max Items
 
 ```php
-GalleryMidiaField::make('featured_images')
+GalleryMediaField::make('featured_images')
     ->label('Featured Images')
     ->mediaType('image')
     ->allowMultiple()
@@ -309,7 +309,7 @@ GalleryMidiaField::make('featured_images')
 ### Video Gallery
 
 ```php
-GalleryMidiaField::make('videos_ids')
+GalleryMediaField::make('videos_ids')
     ->label('Video Gallery')
     ->mediaType('video')
     ->allowMultiple()

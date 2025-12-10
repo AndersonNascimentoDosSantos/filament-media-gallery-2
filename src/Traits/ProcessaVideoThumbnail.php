@@ -4,6 +4,7 @@ namespace Devanderson\FilamentMediaGallery\Traits;
 
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Intervention\Image\Facades\Image;
 
 trait ProcessaVideoThumbnail
 {
@@ -27,7 +28,7 @@ trait ProcessaVideoThumbnail
             }
 
             $fullVideoPath = Storage::disk($disk)->path($videoPath);
-
+//dd($fullVideoPath);
             if (!file_exists($fullVideoPath)) {
                 Log::error('ProcessaVideoThumbnail: Vídeo não encontrado', [
                     'path' => $fullVideoPath
@@ -49,7 +50,7 @@ trait ProcessaVideoThumbnail
             // Define o caminho do thumbnail
             $thumbnailPath = 'thumbnails/video_' . uniqid() . '.jpg';
             $fullThumbnailPath = Storage::disk($disk)->path($thumbnailPath);
-
+//dd($fullThumbnailPath);
             // Cria diretório se não existir
             $thumbnailDir = dirname($fullThumbnailPath);
             if (!is_dir($thumbnailDir)) {
@@ -121,7 +122,7 @@ trait ProcessaVideoThumbnail
             Log::info('ProcessaVideoThumbnail: Gerando thumbnail alternativo');
 
             // Verifica se Intervention Image está disponível
-            if (!class_exists(\Intervention\Image\Facades\Image::class)) {
+            if (!class_exists(Image::class)) {
                 Log::warning('ProcessaVideoThumbnail: Intervention Image não disponível');
                 return null;
             }
@@ -131,7 +132,7 @@ trait ProcessaVideoThumbnail
             $height = (int) ($width * 9 / 16); // Proporção 16:9
 
             // Cria uma imagem placeholder
-            $image = \Intervention\Image\Facades\Image::canvas($width, $height, '#667eea');
+            $image = Image::canvas($width, $height, '#667eea');
 
             // Adiciona ícone de play
             $image->text('▶', $width / 2, $height / 2, function($font) {
@@ -187,7 +188,7 @@ trait ProcessaVideoThumbnail
             }
 
             // Verifica se Intervention Image está disponível
-            if (!class_exists(\Intervention\Image\Facades\Image::class)) {
+            if (!class_exists(Image::class)) {
                 Log::info('ProcessaVideoThumbnail: Intervention Image não disponível para otimização');
                 return;
             }
@@ -197,7 +198,7 @@ trait ProcessaVideoThumbnail
                 $maxWidth = config('filament-media-gallery.video.thumbnail.width', 640);
             }
 
-            $image = \Intervention\Image\Facades\Image::make($fullPath);
+            $image = Image::make($fullPath);
 
             // Redimensiona mantendo proporção se for maior que o máximo
             if ($image->width() > $maxWidth) {

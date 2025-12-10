@@ -71,9 +71,9 @@ class StatsCommand extends Command
             $largest = FilamentMediaGallery::getLargest(5, 'image');
 
             if (!empty($largest['images']) && $largest['images']->count() > 0) {
-                $imageData = $largest['images']->map(fn($img) => [
-                    $img->nome_original,
-                    $img->tamanho_formatado,
+                $imageData = $largest['images']->map(fn ($img) => [
+                    $img->original_name,
+                    $img->size_formatted,
                     $img->created_at->format('d/m/Y H:i'),
                 ]);
 
@@ -90,10 +90,10 @@ class StatsCommand extends Command
             $this->newLine();
 
             if (!empty($largest['videos']) && $largest['videos']->count() > 0) {
-                $videoData = $largest['videos']->map(fn($video) => [
-                    $video->nome_original,
-                    $video->tamanho_formatado,
-                    $video->duracao_formatada ?? 'N/A',
+                $videoData = $largest['videos']->map(fn ($video) => [
+                    $video->original_name,
+                    $video->size_formatted,
+                    $video->duration_formatted ?? 'N/A',
                     $video->created_at->format('d/m/Y H:i'),
                 ]);
 
@@ -115,7 +115,7 @@ class StatsCommand extends Command
             if (!empty($recent['images']) && $recent['images']->count() > 0) {
                 $this->line('📸 <fg=cyan>Imagens:</>');
                 foreach ($recent['images'] as $img) {
-                    $this->line("   • {$img->nome_original} - {$img->created_at->diffForHumans()}");
+                    $this->line("   • {$img->original_name} - {$img->created_at->diffForHumans()}");
                 }
             }
 
@@ -124,7 +124,7 @@ class StatsCommand extends Command
             if (!empty($recent['videos']) && $recent['videos']->count() > 0) {
                 $this->line('🎬 <fg=cyan>Vídeos:</>');
                 foreach ($recent['videos'] as $video) {
-                    $this->line("   • {$video->nome_original} - {$video->created_at->diffForHumans()}");
+                    $this->line("   • {$video->original_name} - {$video->created_at->diffForHumans()}");
                 }
             }
 

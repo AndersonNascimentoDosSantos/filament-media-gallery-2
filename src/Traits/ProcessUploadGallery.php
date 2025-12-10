@@ -36,13 +36,12 @@ trait ProcessUploadGallery
         // Try to access form if exists
         if (property_exists($this, 'form') && method_exists($this, 'form')) {
             try {
-                $form = $this->form($this->makeForm());
-                $components = $form->getComponents(true);
+                // This is a more robust way to get the component definition, especially in tests.
+                $form = $this->getForm(config('forms.default_form_name', 'form'));
+                $components = $form->getSchema()->getComponents(true);
 
                 foreach ($components as $component) {
-                    if ($component->getName() === $key &&
-                        method_exists($component, 'getMediaType')) {
-
+                    if ($component->getName() === $key && method_exists($component, 'getMediaType')) {
                         $config = [
                             'mediaType' => $component->getMediaType(),
                             'modelClass' => $component->getModelClass(),
@@ -50,7 +49,6 @@ trait ProcessUploadGallery
                             'allowUpload' => $component->getAllowUpload(),
                             'maxItems' => $component->getMaxItems(),
                         ];
-
                         $this->fieldConfigCache[$key] = $config;
                         \Log::info('ProcessaUploadGaleria: Configuration obtained from component', $config);
                         return $config;
@@ -106,17 +104,20 @@ trait ProcessUploadGallery
     /**
      * Processes the upload of new media (image or video).
      */
-    public function handleNewMediaUpload(string $uploadedFilename, string $statePath): void
+    public function handleNewMediaUpload(string $uploadedFilename, string $statePath, ?array $fieldConfig = null): void
     {
         try {
             \Log::info('ProcessaUploadGaleria: Starting handleNewMediaUpload', [
                 'uploadedFilename' => $uploadedFilename,
-                'statePath' => $statePath
+                'statePath' => $statePath,
+                'hasFieldConfig' => !is_null($fieldConfig)
             ]);
 
-            $config = $this->getFieldConfig($statePath);
+            // Use the provided config or fetch it if not available
+            $config = $fieldConfig ?? $this->getFieldConfig($statePath);
 
             if (!$config) {
+                \Log::error("ProcessaUploadGaleria: Configuration for field '$statePath' not found.");
                 throw new \Exception("Unable to get configuration for field '$statePath'.");
             }
 
@@ -205,7 +206,11 @@ trait ProcessUploadGallery
 
             // Generate thumbnail for videos if enabled
             if ($mediaType === 'video' && config('filament-media-gallery.video.thumbnail.enabled', true)) {
-                $thumbnail = $this->gerarThumbnailVideo($newPath);
+                // Get the full path for FFmpeg, which is crucial for Storage::fake() in tests
+                $fullPath = Storage::disk($disk)->path($newPath);
+                \Log::info('ProcessaUploadGaleria: Generating video thumbnail', ['fullPath' => $fullPath]);
+
+                $thumbnail = $this->gerarThumbnailVideo($fullPath);
                 if ($thumbnail) {
                     $media->update(['thumbnail_path' => $thumbnail]);
                 }
@@ -482,41 +487,54 @@ trait ProcessUploadGallery
     }
 
     /**
-     * Gets available medias (used in component initialization)
+     * Gera um thumbnail para um arquivo de vídeo usando FFmpeg.
+     *
+     * @param string $videoPath Caminho absoluto para o arquivo de vídeo.
+     * @return string|null Caminho do thumbnail gerado ou null em caso de falha.
      */
-    protected function getAvailableMedias(): array
-    {
-        $modelClass = $this->getModelClass();
-        $mediaType = $this->getMediaType();
-        $perPage = config('filament-media-gallery.gallery.per_page', 24);
-
-        $medias = $modelClass::orderBy('created_at', 'desc')
-            ->paginate($perPage);
-
-        $mappedMedias = collect($medias->items())->map(function ($media) use ($mediaType) {
-            $data = [
-                'id' => $media->id,
-                'url' => $media->url,
-                'original_name' => $media->original_name,
-                'is_video' => $mediaType === 'video',
-            ];
-
-            // Add thumbnail for videos
-            if ($mediaType === 'video' && method_exists($media, 'getThumbnailUrlAttribute')) {
-                $data['thumbnail_url'] = $media->thumbnail_url;
-            }
-
-            // Add alt for images
-            if ($mediaType === 'image' && isset($media->alt)) {
-                $data['alt'] = $media->alt;
-            }
-
-            return $data;
-        })->toArray();
-
-        return [
-            'medias' => $mappedMedias,
-            'hasMore' => $medias->hasMorePages(),
-        ];
-    }
+//    protected function gerarThumbnailVideo(string $videoPath): ?string
+//    {
+//        try {
+//            $ffmpegPath = config('filament-media-gallery.video.ffmpeg_path', '/usr/bin/ffmpeg');
+//            $ffprobePath = config('filament-media-gallery.video.ffprobe_path', '/usr/bin/ffprobe');
+//
+//            if (!file_exists($ffmpegPath) || !file_exists($ffprobePath)) {
+//                \Log::error('FFmpeg ou FFprobe não encontrado nos caminhos especificados.');
+//                return null;
+//            }
+//
+//            $ffmpeg = \FFMpeg\FFMpeg::create([
+//                'ffmpeg.binaries' => $ffmpegPath,
+//                'ffprobe.binaries' => $ffprobePath,
+//            ]);
+//
+//            // FFmpeg requires a file with a proper extension to work reliably, especially in tests.
+//            // We rename the temp file to include a .mp4 extension before processing.
+//            $videoPathWithExtension = $videoPath . '.mp4';
+//            if (!rename($videoPath, $videoPathWithExtension)) {
+//                \Log::error('Falha ao renomear arquivo de vídeo temporário para adicionar extensão.');
+//                return null;
+//            }
+//
+//            $video = $ffmpeg->open($videoPathWithExtension);
+//
+//            $thumbnailDir = config('filament-media-gallery.video.thumbnail.path', 'thumbnails');
+//            // Use the original filename (without the temp path) to create the thumbnail name
+//            $thumbnailFilename = pathinfo($videoPathWithExtension, PATHINFO_FILENAME) . '.jpg';
+//            $thumbnailFullPath = Storage::disk('public')->path($thumbnailDir . '/' . $thumbnailFilename);
+//
+//            // Garante que o diretório de thumbnails exista
+//            Storage::disk('public')->makeDirectory($thumbnailDir);
+//
+//            $video->frame(\FFMpeg\Coordinate\TimeCode::fromSeconds(2))->save($thumbnailFullPath);
+//
+//            // Clean up the renamed temp file
+//            @unlink($videoPathWithExtension);
+//
+//            return $thumbnailDir . '/' . $thumbnailFilename;
+//        } catch (\Exception $e) {
+//            \Log::error('Falha ao gerar thumbnail do vídeo: ' . $e->getMessage());
+//            return null;
+//        }
+//    }
 }

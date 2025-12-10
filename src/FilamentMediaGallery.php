@@ -15,10 +15,10 @@ class FilamentMediaGallery
         return [
             'total_imagens' => Image::count(),
             'total_videos' => Video::count(),
-            'tamanho_total_imagens' => $this->formatBytes(Image::sum('tamanho')),
-            'tamanho_total_videos' => $this->formatBytes(Video::sum('tamanho')),
+            'tamanho_total_imagens' => $this->formatBytes(Image::sum('size')),
+            'tamanho_total_videos' => $this->formatBytes(Video::sum('size')),
             'espaco_total_usado' => $this->formatBytes(
-                Image::sum('tamanho') + Video::sum('tamanho')
+                Image::sum('size') + Video::sum('size')
             ),
         ];
     }
@@ -93,7 +93,14 @@ class FilamentMediaGallery
         $disk = config('filament-media-gallery.disk', 'public');
         $path = config('filament-media-gallery.path', 'galeria');
 
-        $files = Storage::disk($disk)->files($path);
+        $allFiles = Storage::disk($disk)->files($path);
+        $allowedExtensions = config('filament-media-gallery.image.allowed_extensions', ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+
+        // Filtra apenas arquivos que parecem ser imagens
+        $files = array_filter($allFiles, function ($file) use ($allowedExtensions) {
+            return in_array(pathinfo($file, PATHINFO_EXTENSION), $allowedExtensions);
+        });
+
         $registeredPaths = Image::pluck('path')->toArray();
 
         $orphans = array_diff($files, $registeredPaths);
@@ -114,14 +121,22 @@ class FilamentMediaGallery
     public function cleanOrphanVideos(): array
     {
         $disk = config('filament-media-gallery.disk', 'public');
-        $path = config('filament-media-gallery.path', 'galeria');
+        $galleryPath = config('filament-media-gallery.path', 'galeria');
+        $thumbnailPath = 'thumbnails';
 
-        $files = Storage::disk($disk)->files($path);
+        $galleryFiles = Storage::disk($disk)->files($galleryPath);
+        $allowedVideoExtensions = config('filament-media-gallery.video.allowed_extensions', ['mp4', 'webm', 'ogg']);
+
+        // Filtra apenas arquivos que parecem ser vídeos no diretório principal
+        $videoFiles = array_filter($galleryFiles, function ($file) use ($allowedVideoExtensions) {
+            return in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), $allowedVideoExtensions);
+        });
+
+        $files = array_merge($videoFiles, Storage::disk($disk)->files($thumbnailPath));
         $registeredPaths = Video::pluck('path')->toArray();
         $registeredThumbnails = Video::whereNotNull('thumbnail_path')
             ->pluck('thumbnail_path')
             ->toArray();
-
         $registered = array_merge($registeredPaths, $registeredThumbnails);
         $orphans = array_diff($files, $registered);
         $deleted = [];
@@ -154,13 +169,13 @@ class FilamentMediaGallery
         $results = [];
 
         if (in_array($type, ['image', 'both'])) {
-            $results['images'] = Image::where('nome_original', 'like', "%{$query}%")
+            $results['images'] = Image::where('original_name', 'like', "%{$query}%")
                 ->orderBy('created_at', 'desc')
                 ->get();
         }
 
         if (in_array($type, ['video', 'both'])) {
-            $results['videos'] = Video::where('nome_original', 'like', "%{$query}%")
+            $results['videos'] = Video::where('original_name', 'like', "%{$query}%")
                 ->orderBy('created_at', 'desc')
                 ->get();
         }
@@ -198,13 +213,13 @@ class FilamentMediaGallery
         $results = [];
 
         if (in_array($type, ['image', 'both'])) {
-            $results['images'] = Image::orderBy('tamanho', 'desc')
+            $results['images'] = Image::orderBy('size', 'desc')
                 ->limit($limit)
                 ->get();
         }
 
         if (in_array($type, ['video', 'both'])) {
-            $results['videos'] = Video::orderBy('tamanho', 'desc')
+            $results['videos'] = Video::orderBy('size', 'desc')
                 ->limit($limit)
                 ->get();
         }

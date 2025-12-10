@@ -88,7 +88,8 @@ class CleanupCommand extends Command
         $deleted = FilamentMediaGallery::cleanOrphanImages();
 
         if (count($deleted) > 0) {
-            $this->warn("   ❌ {count($deleted)} arquivo(s) órfão(s) de imagem deletado(s)");
+            $count = count($deleted);
+            $this->warn("   ❌ {$count} arquivo(s) órfão(s) de imagem deletado(s)");
 
             if ($this->option('verbose')) {
                 foreach ($deleted as $file) {
@@ -112,7 +113,8 @@ class CleanupCommand extends Command
         $deleted = FilamentMediaGallery::cleanOrphanVideos();
 
         if (count($deleted) > 0) {
-            $this->warn("   ❌ " . count($deleted) . " arquivo(s) órfão(s) de vídeo deletado(s)");
+            $count = count($deleted);
+            $this->warn("   ❌ {$count} arquivo(s) órfão(s) de vídeo deletado(s)");
 
             if ($this->option('verbose')) {
                 foreach ($deleted as $file) {

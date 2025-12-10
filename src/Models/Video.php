@@ -15,15 +15,15 @@ class Video extends Model
     protected $fillable = [
         'path',
         'thumbnail_path',
-        'nome_original',
+        'original_name',
         'mime_type',
-        'tamanho',
-        'duracao',
+        'size',
+        'duration',
     ];
 
     protected $casts = [
-        'tamanho' => 'integer',
-        'duracao' => 'float',
+        'size' => 'integer',
+        'duration' => 'float',
     ];
 
     protected $appends = ['url', 'thumbnail_url'];
@@ -51,11 +51,11 @@ class Video extends Model
     }
 
     /**
-     * Retorna o tamanho formatado
+     * Retorna o size formatado
      */
-    public function getTamanhoFormatadoAttribute(): string
+    public function getSizeFormattedAttribute(): string
     {
-        $bytes = $this->tamanho;
+        $bytes = $this->size;
 
         if ($bytes >= 1073741824) {
             return number_format($bytes / 1073741824, 2) . ' GB';
@@ -71,13 +71,13 @@ class Video extends Model
     /**
      * Retorna a duração formatada
      */
-    public function getDuracaoFormatadaAttribute(): ?string
+    public function getDurationFormattedAttribute(): ?string
     {
-        if (!$this->duracao) {
+        if (!$this->duration) {
             return null;
         }
 
-        $seconds = (int) $this->duracao;
+        $seconds = (int) $this->duration;
         $hours = floor($seconds / 3600);
         $minutes = floor(($seconds % 3600) / 60);
         $seconds = $seconds % 60;

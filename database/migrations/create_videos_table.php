@@ -12,10 +12,10 @@ return new class extends Migration
             $table->id();
             $table->string('path');
             $table->string('thumbnail_path')->nullable();
-            $table->string('nome_original');
+            $table->string('original_name');
             $table->string('mime_type', 50);
-            $table->unsignedBigInteger('tamanho')->comment('Tamanho em bytes');
-            $table->decimal('duracao', 10, 2)->nullable()->comment('Duração em segundos');
+            $table->unsignedBigInteger('size')->comment('Size in bytes');
+            $table->decimal('duration', 10, 2)->nullable()->comment('Duração em segundos');
             $table->timestamps();
             $table->softDeletes();
 
