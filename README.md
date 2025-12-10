@@ -2,7 +2,6 @@
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/devanderson/filament-media-gallery.svg?style=flat-square)](https://packagist.org/packages/devanderson/filament-media-gallery)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/AndersonNascimentoDosSantos/filament-media-gallery-2/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/AndersonNascimentoDosSantos/filament-media-gallery-2/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/AndersonNascimentoDosSantos/filament-media-gallery-2/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/AndersonNascimentoDosSantos/filament-media-gallery-2/actions?query=workflow%3A%22Fix+PHP+code+styling%22+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/devanderson/filament-media-gallery.svg?style=flat-square)](https://packagist.org/packages/devanderson/filament-media-gallery)
 
 A complete media gallery plugin for Filament v4 with support for image and video uploads, integrated image editor, automatic video thumbnail generation, and much more.
