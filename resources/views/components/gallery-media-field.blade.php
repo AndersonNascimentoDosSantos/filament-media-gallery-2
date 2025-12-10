@@ -42,7 +42,7 @@
    $initiallySelectedMedias = $modelClass::find($getState() ?? [])->map(fn ($media) => [
        'id' => $media->id,
        'url' => $media->url,
-       'nome_original' => $media->nome_original,
+       'original_name' => $media->original_name,
        'is_video' => $mediaType === 'video',
        'alt' => $mediaType === 'image' && isset($media->alt) ? $media->alt : null,
        'thumbnail_url' => $mediaType === 'video' && method_exists($media, 'getThumbnailUrlAttribute') ? $media->thumbnail_url : null,

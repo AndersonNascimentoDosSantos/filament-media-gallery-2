@@ -16,9 +16,9 @@ class FilamentMediaGallery
             'total_imagens' => Image::count(),
             'total_videos' => Video::count(),
             'tamanho_total_imagens' => $this->formatBytes(Image::sum('size')),
-            'tamanho_total_videos' => $this->formatBytes(Video::sum('tamanho')),
+            'tamanho_total_videos' => $this->formatBytes(Video::sum('size')),
             'espaco_total_usado' => $this->formatBytes(
-                Image::sum('size') + Video::sum('tamanho')
+                Image::sum('size') + Video::sum('size')
             ),
         ];
     }
@@ -169,13 +169,13 @@ class FilamentMediaGallery
         $results = [];
 
         if (in_array($type, ['image', 'both'])) {
-            $results['images'] = Image::where('nome_original', 'like', "%{$query}%")
+            $results['images'] = Image::where('original_name', 'like', "%{$query}%")
                 ->orderBy('created_at', 'desc')
                 ->get();
         }
 
         if (in_array($type, ['video', 'both'])) {
-            $results['videos'] = Video::where('nome_original', 'like', "%{$query}%")
+            $results['videos'] = Video::where('original_name', 'like', "%{$query}%")
                 ->orderBy('created_at', 'desc')
                 ->get();
         }
@@ -219,7 +219,7 @@ class FilamentMediaGallery
         }
 
         if (in_array($type, ['video', 'both'])) {
-            $results['videos'] = Video::orderBy('tamanho', 'desc')
+            $results['videos'] = Video::orderBy('size', 'desc')
                 ->limit($limit)
                 ->get();
         }

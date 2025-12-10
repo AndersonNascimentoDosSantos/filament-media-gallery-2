@@ -17,10 +17,10 @@ class VideoFactory extends Factory
         return [
             'path' => config('filament-media-gallery.path', 'galeria') . '/' . $fileName,
             'thumbnail_path' => 'thumbnails/' . $thumbnailName,
-            'nome_original' => $fileName,
+            'original_name' => $fileName,
             'mime_type' => 'video/mp4',
-            'tamanho' => $this->faker->numberBetween(1000000, 50000000),
-            'duracao' => $this->faker->randomFloat(2, 10, 300),
+            'size' => $this->faker->numberBetween(1000000, 50000000),
+            'duration' => $this->faker->randomFloat(2, 10, 300),
         ];
     }
 }

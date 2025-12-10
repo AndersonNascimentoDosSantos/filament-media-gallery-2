@@ -19,7 +19,7 @@ beforeEach(function () {
 it('returns correct stats', function () {
     Image::create(['path' => '1.jpg', 'original_name' => '1.jpg', 'mime_type' => 'image/jpeg', 'size' => 1024]);
     Image::create(['path' => '2.jpg', 'original_name' => '2.jpg', 'mime_type' => 'image/jpeg', 'size' => 2048]);
-    Video::create(['path' => '1.mp4', 'nome_original' => '1.mp4', 'mime_type' => 'video/mp4', 'tamanho' => 4096]);
+    Video::create(['path' => '1.mp4', 'original_name' => '1.mp4', 'mime_type' => 'video/mp4', 'size' => 4096]);
 
     $stats = FilamentMediaGallery::getStats();
 

@@ -91,9 +91,9 @@ class StatsCommand extends Command
 
             if (!empty($largest['videos']) && $largest['videos']->count() > 0) {
                 $videoData = $largest['videos']->map(fn ($video) => [
-                    $video->nome_original,
-                    $video->tamanho_formatado,
-                    $video->duracao_formatada ?? 'N/A',
+                    $video->original_name,
+                    $video->size_formatted,
+                    $video->duration_formatted ?? 'N/A',
                     $video->created_at->format('d/m/Y H:i'),
                 ]);
 
@@ -124,7 +124,7 @@ class StatsCommand extends Command
             if (!empty($recent['videos']) && $recent['videos']->count() > 0) {
                 $this->line('🎬 <fg=cyan>Vídeos:</>');
                 foreach ($recent['videos'] as $video) {
-                    $this->line("   • {$video->nome_original} - {$video->created_at->diffForHumans()}");
+                    $this->line("   • {$video->original_name} - {$video->created_at->diffForHumans()}");
                 }
             }
 
